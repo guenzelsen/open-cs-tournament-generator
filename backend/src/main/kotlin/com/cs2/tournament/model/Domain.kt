@@ -9,7 +9,8 @@ import java.util.UUID
 data class User(
     @Id val id: String = UUID.randomUUID().toString(),
     @Column(unique = true) val username: String,
-    val passwordHash: String
+    val passwordHash: String,
+    @Column(unique = true) val steamId: String? = null
 )
 
 @Entity

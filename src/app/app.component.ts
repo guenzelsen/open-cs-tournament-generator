@@ -45,11 +45,21 @@ export class AppComponent {
     cs2Maps = ['Mirage', 'Inferno', 'Nuke', 'Overpass', 'Vertigo', 'Ancient', 'Anubis', 'Dust II'];
 
     constructor() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        if (token) {
+            this.authService.loginWithToken(token);
+        }
+
         effect(() => {
             if (this.isLoggedIn()) {
                 this.tournamentService.loadTournaments();
             }
         });
+    }
+
+    loginWithSteam() {
+        window.location.href = 'http://localhost:8080/api/auth/steam';
     }
 
     // --- AUTH --- //

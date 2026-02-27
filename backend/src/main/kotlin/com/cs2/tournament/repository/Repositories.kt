@@ -11,6 +11,7 @@ import java.util.Optional
 interface UserRepository : JpaRepository<User, String> {
     fun findByUsername(username: String): Optional<User>
     fun existsByUsername(username: String): Boolean
+    fun findBySteamId(steamId: String): Optional<User>
 }
 
 @Repository

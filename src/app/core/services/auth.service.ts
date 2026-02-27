@@ -58,6 +58,21 @@ export class AuthService {
         }
     }
 
+    loginWithToken(token: string): boolean {
+        try {
+            // Minimal JWT parser for the subject (username) and userId
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            this.handleAuthResponse({ token, username: payload.sub, userId: payload.userId });
+
+            // Clean URL from the token param
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return true;
+        } catch (e) {
+            console.error('Failed to parse token', e);
+            return false;
+        }
+    }
+
     logout() {
         localStorage.removeItem('jwt_token');
         localStorage.removeItem('username');

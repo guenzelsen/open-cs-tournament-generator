@@ -62,6 +62,21 @@
                 Register Account
             </button>
 
+            <div class="relative flex py-5 items-center">
+                <div class="flex-grow border-t border-cs2-muted/20"></div>
+                <span class="flex-shrink-0 mx-4 text-cs2-muted text-sm font-bold uppercase tracking-widest">or</span>
+                <div class="flex-grow border-t border-cs2-muted/20"></div>
+            </div>
+
+            <button (click)="loginWithSteam()"
+                class="w-full bg-[#171a21] hover:bg-[#2a475e] text-white py-3 rounded-lg font-bold uppercase tracking-wider transition-all shadow-lg border border-cs2-muted/10 active:scale-95 mb-6 flex items-center justify-center gap-3">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current">
+                    <path
+                        d="M11.979 0C5.394 0 0 5.38 0 11.979c0 4.704 2.71 8.761 6.641 10.74l3.153-9.112a2.82 2.82 0 0 1-.954-1.996c0-1.554 1.258-2.814 2.812-2.814 1.554 0 2.813 1.26 2.813 2.814a2.818 2.818 0 0 1-2.222 2.75l-1.954 5.642a12.003 12.003 0 0 0 1.69.12c6.586 0 11.98-5.381 11.98-11.98S18.565 0 11.979 0zm-5.071 18.067c-.23.067-.456.126-.677.173l2.062-5.96a4.276 4.276 0 0 0 1.488.94zm5.06-8.91C10.412 9.157 9.155 10.417 9.155 11.972c0 1.556 1.257 2.815 2.813 2.815 1.555 0 2.812-1.26 2.812-2.815 0-1.555-1.257-2.815-2.812-2.815z" />
+                </svg>
+                Sign in through Steam
+            </button>
+
             <p class="text-center text-cs2-muted text-sm">
                 {{ isLoginMode() ? 'Need an account?' : 'Already have an account?' }}
                 <button (click)="isLoginMode.set(!isLoginMode())" class="text-cs2-orange hover:underline font-bold">
