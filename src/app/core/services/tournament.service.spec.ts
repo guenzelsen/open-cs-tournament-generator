@@ -1,11 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TournamentService } from './tournament.service';
+import { TournamentService, TournamentListResponse } from './tournament.service';
+import { vi } from 'vitest';
 
 describe('TournamentService', () => {
     let service: TournamentService;
     let httpTestingController: HttpTestingController;
+
+    const mockResponse: TournamentListResponse = {
+        id: '1', name: 'Test', organizerId: 'user1', currentRound: 0, status: 'SETUP', maxRounds: 4, teams: [], matches: []
+    };
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -17,10 +22,6 @@ describe('TournamentService', () => {
         });
         service = TestBed.inject(TournamentService);
         httpTestingController = TestBed.inject(HttpTestingController);
-
-        // Ignore the initial refreshState() call
-        const req = httpTestingController.expectOne('http://localhost:8080/api/tournament/state');
-        req.flush({ teams: [], matches: [], currentRound: 0, status: 'SETUP', maxRounds: 4 });
     });
 
     afterEach(() => {
@@ -31,21 +32,29 @@ describe('TournamentService', () => {
         expect(service).toBeTruthy();
     });
 
-    it('should call POST /teams when adding a team', async () => {
-        const p = service.addTeam('Navi');
+    it('should POST to create a tournament', async () => {
+        vi.spyOn(service, 'loadTournaments').mockResolvedValue(undefined as any);
 
-        const req = httpTestingController.expectOne('http://localhost:8080/api/tournament/teams');
+        const p = service.createTournament('Major 2026');
+
+        const req = httpTestingController.expectOne('http://localhost:8080/api/tournaments');
         expect(req.request.method).toBe('POST');
-        req.flush({ id: '1', name: 'Navi', wins: 0, losses: 0, buchholzScore: 0 });
-
-        // Allow promise resolution to flush to event loop
-        await new Promise(r => setTimeout(r, 0));
-
-        const refreshReq = httpTestingController.expectOne('http://localhost:8080/api/tournament/state');
-        expect(refreshReq.request.method).toBe('GET');
-        refreshReq.flush({ teams: [{ id: '1', name: 'Navi', wins: 0, losses: 0, buchholzScore: 0 }], matches: [], currentRound: 0, status: 'SETUP', maxRounds: 4 });
+        req.flush(mockResponse);
 
         await p;
+        expect(service.loadTournaments).toHaveBeenCalled();
     });
 
+    it('should POST to add a team to active tournament', async () => {
+        vi.spyOn(service, 'loadTournament').mockResolvedValue(undefined as any);
+
+        const p = service.addTeam('1', 'Navi');
+
+        const req = httpTestingController.expectOne('http://localhost:8080/api/tournaments/1/teams');
+        expect(req.request.method).toBe('POST');
+        req.flush({ id: '2', name: 'Navi' });
+
+        await p;
+        expect(service.loadTournament).toHaveBeenCalledWith('1');
+    });
 });

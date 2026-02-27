@@ -3,107 +3,127 @@ import { HttpClient } from '@angular/common/http';
 import { Team, Match, TournamentState } from '../models/tournament.model';
 import { firstValueFrom } from 'rxjs';
 
+export interface TournamentListResponse {
+    id: string;
+    name: string;
+    organizerId: string;
+    currentRound: number;
+    status: string;
+    maxRounds: number;
+    teams: Team[];
+    matches: Match[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class TournamentService {
     private http = inject(HttpClient);
-    // Default to localhost:8080. If deploying to Pi, this could be configured via environment variables.
-    private apiUrl = 'http://localhost:8080/api/tournament';
+    private apiUrl = 'http://localhost:8080/api/tournaments';
 
-    // State 
-    private state = signal<TournamentState>({
-        teams: [],
-        matches: [],
-        currentRound: 0,
-        status: 'SETUP',
-        maxRounds: 4
-    });
+    private tournamentsList = signal<TournamentListResponse[]>([]);
+    readonly allTournaments = computed(() => this.tournamentsList());
 
-    // Selectors
-    readonly teams = computed(() => this.state().teams);
-    readonly activeMatches = computed(() => this.state().matches.filter(m => m.round === this.state().currentRound));
-    readonly allMatches = computed(() => this.state().matches);
-    readonly currentRound = computed(() => this.state().currentRound);
-    readonly maxRounds = computed(() => this.state().maxRounds);
-    readonly status = computed(() => this.state().status);
+    activeTournamentDetails = signal<TournamentListResponse | null>(null);
+    readonly activeTournament = computed(() => this.activeTournamentDetails());
 
+    // Wrappers to map the selected tournament to the old structure
+    readonly teams = computed(() => this.activeTournamentDetails()?.teams || []);
+    readonly allMatches = computed(() => this.activeTournamentDetails()?.matches || []);
+    readonly activeMatches = computed(() => this.allMatches().filter(m => m.round === this.activeTournamentDetails()?.currentRound));
+    readonly currentRound = computed(() => this.activeTournamentDetails()?.currentRound || 0);
+    readonly maxRounds = computed(() => this.activeTournamentDetails()?.maxRounds || 4);
+    readonly status = computed(() => this.activeTournamentDetails()?.status || 'SETUP');
     readonly standings = computed(() => {
-        return [...this.state().teams].sort((a, b) => {
+        const t = this.activeTournamentDetails();
+        if (!t) return [];
+        return [...t.teams].sort((a, b) => {
             if (a.wins !== b.wins) return b.wins - a.wins;
-            if (a.losses !== b.losses) return a.losses - b.losses;
-            return 0;
+            return a.losses - b.losses;
         });
     });
 
-    constructor() {
-        this.refreshState(); // Load initial state from server
-    }
-
-    async refreshState() {
+    // 0. Loading
+    async loadTournaments() {
         try {
-            const state = await firstValueFrom(this.http.get<TournamentState>(`${this.apiUrl}/state`));
-            this.state.set(state);
+            const data = await firstValueFrom(this.http.get<TournamentListResponse[]>(this.apiUrl));
+            this.tournamentsList.set(data);
         } catch (e) {
-            console.error("Failed to load state from backend", e);
+            console.error('Failed to load tournaments', e);
         }
     }
 
-    async addTeam(name: string) {
-        if (this.state().status !== 'SETUP') return;
+    async loadTournament(id: string) {
         try {
-            await firstValueFrom(this.http.post<Team>(`${this.apiUrl}/teams`, { name }));
-            await this.refreshState();
+            const data = await firstValueFrom(this.http.get<TournamentListResponse>(`${this.apiUrl}/${id}`));
+            this.activeTournamentDetails.set(data);
         } catch (e) {
-            console.error(e);
-            alert("Failed to add team. Ensure backend is running.");
+            console.error('Failed to load tournament details', e);
+            throw e;
         }
     }
 
-    async removeTeam(id: string) {
-        if (this.state().status !== 'SETUP') return;
+    // 1. Setup Phase Methods
+    async createTournament(name: string) {
         try {
-            await firstValueFrom(this.http.delete(`${this.apiUrl}/teams/${id}`));
-            await this.refreshState();
+            await firstValueFrom(this.http.post<TournamentListResponse>(this.apiUrl, { name }));
+            await this.loadTournaments();
         } catch (e) {
-            console.error(e);
+            console.error('Failed to create tournament', e);
+            throw e;
         }
     }
 
-    async startTournament() {
-        const teams = this.state().teams;
-        if (teams.length < 2 || teams.length % 2 !== 0) {
-            throw new Error("Need an even number of teams to start.");
-        }
-
+    async addTeam(tournamentId: string, name: string) {
         try {
-            await firstValueFrom(this.http.post(`${this.apiUrl}/start`, {}));
-            await this.refreshState();
+            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/teams`, { name }));
+            await this.loadTournament(tournamentId);
         } catch (e) {
             console.error(e);
-            throw new Error("Failed to start tournament on server.");
+            throw new Error("Failed to add team. Are you the organizer?");
         }
     }
 
+    async removeTeam(tournamentId: string, teamId: string) {
+        try {
+            await firstValueFrom(this.http.delete(`${this.apiUrl}/${tournamentId}/teams/${teamId}`));
+            await this.loadTournament(tournamentId);
+        } catch (e) {
+            console.error(e);
+            throw new Error("Failed to remove team. Are you the organizer?");
+        }
+    }
+
+    async startTournament(tournamentId: string) {
+        try {
+            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/start`, {}));
+            await this.loadTournament(tournamentId);
+        } catch (e) {
+            console.error(e);
+            throw new Error("Failed to start tournament. Check teams or permissions.");
+        }
+    }
+
+    // 2. CS2 Private Match Code Gen is backend-computed now.
+
+    // 3. Swiss Logic & Round progression
     async reportMatchResult(matchId: string, winnerId: string) {
+        const active = this.activeTournamentDetails();
+        if (!active) return;
+
         try {
             await firstValueFrom(this.http.post(`${this.apiUrl}/matches/${matchId}/result`, { winnerId }));
-            await this.refreshState();
+            await this.loadTournament(active.id);
         } catch (e) {
             console.error(e);
-            alert("Failed to report win.");
+            throw new Error("Failed to report win. Are you the organizer?");
         }
     }
 
-    async advanceRound() {
-        const currentActiveMatches = this.activeMatches();
-        if (currentActiveMatches.some(m => !m.winnerId)) {
-            throw new Error("All matches must have a result before advancing.");
-        }
-
+    async advanceRound(tournamentId: string) {
         try {
-            await firstValueFrom(this.http.post(`${this.apiUrl}/advance`, {}));
-            await this.refreshState();
+            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/advance`, {}));
+            await this.loadTournament(tournamentId);
         } catch (e) {
             console.error(e);
             throw new Error("Failed to advance round.");

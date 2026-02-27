@@ -2,111 +2,149 @@ package com.cs2.tournament.service
 
 import com.cs2.tournament.model.Match
 import com.cs2.tournament.model.Team
-import com.cs2.tournament.model.TournamentState
+import com.cs2.tournament.model.Tournament
 import com.cs2.tournament.model.TournamentStatus
+import com.cs2.tournament.model.MatchLobby
+import com.cs2.tournament.repository.MatchRepository
+import com.cs2.tournament.repository.TournamentRepository
+import com.cs2.tournament.repository.UserRepository
 import org.springframework.stereotype.Service
-import java.util.*
+import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 @Service
-class TournamentService {
+class TournamentService(
+    private val tournamentRepository: TournamentRepository,
+    private val userRepository: UserRepository,
+    private val matchRepository: MatchRepository
+) {
 
-    private val state = TournamentState()
-    private val lock = Any() // Simple lock for concurrent safety
+    data class TournamentResponse(
+        val id: String,
+        val name: String,
+        val organizerId: String,
+        val currentRound: Int,
+        val status: TournamentStatus,
+        val maxRounds: Int,
+        val teams: List<Team>,
+        val matches: List<Match>
+    )
 
-    // DTO for AddTeam
-    data class AddTeamRequest(val name: String)
-    data class ReportWinRequest(val winnerId: String)
-
-    fun getState(): TournamentState {
-        synchronized(lock) {
-            return state.copy() // Should ideally deep copy or DTO
-        }
+    fun toResponse(t: Tournament): TournamentResponse {
+        return TournamentResponse(
+            id = t.id,
+            name = t.name,
+            organizerId = t.organizer.id,
+            currentRound = t.currentRound,
+            status = t.status,
+            maxRounds = t.maxRounds,
+            teams = t.teams,
+            matches = t.matches
+        )
     }
 
-    fun addTeam(request: AddTeamRequest): Team {
-        synchronized(lock) {
-            if (state.status != TournamentStatus.SETUP) {
-                throw IllegalStateException("Tournament is not in SETUP phase.")
-            }
-            val newTeam = Team(
-                id = UUID.randomUUID().toString(),
-                name = request.name
-            )
-            state.teams.add(newTeam)
-            return newTeam
-        }
+    @Transactional(readOnly = true)
+    fun getAllTournaments(): List<TournamentResponse> {
+        return tournamentRepository.findAll().map { toResponse(it) }
     }
 
-    fun removeTeam(id: String) {
-        synchronized(lock) {
-            if (state.status != TournamentStatus.SETUP) {
-                throw IllegalStateException("Tournament is not in SETUP phase.")
-            }
-            state.teams.removeIf { it.id == id }
-        }
+    @Transactional(readOnly = true)
+    fun getTournament(id: String): TournamentResponse {
+        val t = tournamentRepository.findById(id).orElseThrow { IllegalArgumentException("Not found") }
+        return toResponse(t)
     }
 
-    fun startTournament() {
-        synchronized(lock) {
-            if (state.teams.size < 2 || state.teams.size % 2 != 0) {
-                throw IllegalStateException("Need an even number of teams to start.")
-            }
-            if (state.status != TournamentStatus.SETUP) {
-                throw IllegalStateException("Already started.")
-            }
-
-            state.status = TournamentStatus.ACTIVE
-            state.currentRound = 1
-            generatePairings()
-        }
+    @Transactional
+    fun createTournament(name: String, organizerUsername: String): TournamentResponse {
+        val user = userRepository.findByUsername(organizerUsername).orElseThrow { IllegalArgumentException("User not found") }
+        val t = Tournament(
+            name = name,
+            organizer = user
+        )
+        return toResponse(tournamentRepository.save(t))
     }
 
-    fun reportMatchResult(matchId: String, request: ReportWinRequest) {
-        synchronized(lock) {
-            val match = state.matches.find { it.id == matchId }
-                ?: throw IllegalArgumentException("Match not found")
+    @Transactional
+    fun addTeam(tournamentId: String, teamName: String, username: String): Team {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can add teams")
+        if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
 
-            if (match.winnerId != null) return // already reported
-
-            match.winnerId = request.winnerId
-
-            val loserId = if (request.winnerId == match.team1Id) match.team2Id else match.team1Id
-
-            state.teams.find { it.id == request.winnerId }?.let { it.wins++ }
-            state.teams.find { it.id == loserId }?.let { it.losses++ }
-        }
+        val newTeam = Team(name = teamName, tournament = t)
+        t.teams.add(newTeam)
+        tournamentRepository.save(t)
+        return newTeam
     }
 
-    fun advanceRound() {
-        synchronized(lock) {
-            val currentActiveMatches = state.matches.filter { it.round == state.currentRound }
-            if (currentActiveMatches.any { it.winnerId == null }) {
-                throw IllegalStateException("All matches must have a result before advancing.")
-            }
+    @Transactional
+    fun removeTeam(tournamentId: String, teamId: String, username: String) {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can remove teams")
+        if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
 
-            if (state.currentRound >= state.maxRounds) {
-                state.status = TournamentStatus.FINISHED
-                return
-            }
-
-            state.currentRound++
-            generatePairings()
-        }
+        t.teams.removeIf { it.id == teamId }
+        tournamentRepository.save(t)
     }
 
-    private fun generatePairings() {
-        // Sorted standings
-        val standings = state.teams.sortedWith(
-            compareByDescending<Team> { it.wins }
-                .thenBy { it.losses }
+    @Transactional
+    fun startTournament(tournamentId: String, username: String) {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can start")
+        if (t.teams.size < 2 || t.teams.size % 2 != 0) throw IllegalStateException("Need even number of teams")
+        if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Already started")
+
+        t.status = TournamentStatus.ACTIVE
+        t.currentRound = 1
+        generatePairings(t)
+        tournamentRepository.save(t)
+    }
+
+    @Transactional
+    fun reportMatchResult(matchId: String, winnerId: String, username: String) {
+        val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }
+        val t = match.tournament
+        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can report wins")
+        if (match.winnerId != null) return
+
+        match.winnerId = winnerId
+        val loserId = if (winnerId == match.team1Id) match.team2Id else match.team1Id
+
+        t.teams.find { it.id == winnerId }?.let { it.wins++ }
+        t.teams.find { it.id == loserId }?.let { it.losses++ }
+        
+        matchRepository.save(match)
+        tournamentRepository.save(t)
+    }
+
+    @Transactional
+    fun advanceRound(tournamentId: String, username: String) {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can advance")
+
+        val currentActiveMatches = t.matches.filter { it.round == t.currentRound }
+        if (currentActiveMatches.any { it.winnerId == null }) {
+            throw IllegalStateException("All matches must have a result before advancing.")
+        }
+
+        if (t.currentRound >= t.maxRounds) {
+            t.status = TournamentStatus.FINISHED
+        } else {
+            t.currentRound++
+            generatePairings(t)
+        }
+        tournamentRepository.save(t)
+    }
+
+    private fun generatePairings(t: Tournament) {
+        val standings = t.teams.sortedWith(
+            compareByDescending<Team> { it.wins }.thenBy { it.losses }
         ).toMutableList()
 
         val newMatches = mutableListOf<Match>()
-        val pastMatches = state.matches
+        val pastMatches = t.matches
 
         while (standings.size >= 2) {
             val team1 = standings.removeAt(0)
-
             var opponentIndex = 0
             for (i in standings.indices) {
                 val team2 = standings[i]
@@ -114,7 +152,6 @@ class TournamentService {
                     (it.team1Id == team1.id && it.team2Id == team2.id) ||
                     (it.team1Id == team2.id && it.team2Id == team1.id)
                 }
-
                 if (!hasPlayed) {
                     opponentIndex = i
                     break
@@ -122,28 +159,25 @@ class TournamentService {
             }
 
             val team2 = standings.removeAt(opponentIndex)
-
-            newMatches.add(
-                Match(
-                    id = UUID.randomUUID().toString(),
-                    team1Id = team1.id,
-                    team2Id = team2.id,
-                    round = state.currentRound,
-                    privateMatchCode = generateMatchCode()
-                )
+            val match = Match(
+                tournament = t,
+                team1Id = team1.id,
+                team2Id = team2.id,
+                round = t.currentRound,
+                privateMatchCode = generateMatchCode()
             )
+            // Create the lobby for the match automatically
+            val lobby = MatchLobby(match = match)
+            match.lobby = lobby
+            
+            newMatches.add(match)
         }
-
-        state.matches.addAll(newMatches)
+        t.matches.addAll(newMatches)
     }
 
     private fun generateMatchCode(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        var result = ""
         val random = java.util.Random()
-        for (i in 0 until 6) {
-            result += chars[random.nextInt(chars.length)]
-        }
-        return result
+        return (1..6).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 }
