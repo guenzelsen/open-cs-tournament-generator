@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+    --color-cs2-dark: #0f172a;
+    --color-cs2-darker: #020617;
+    --color-cs2-orange: #f97316;
+    --color-cs2-orange-hover: #ea580c;
+    --color-cs2-blue: #3b82f6;
+    --color-cs2-text: #f8fafc;
+    --color-cs2-muted: #94a3b8;
+}
+
+body {
+    @apply bg-cs2-dark text-cs2-text h-screen w-screen overflow-x-hidden pt-8 pb-16;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes shimmer-reverse {
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+.animation-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-shimmer {
+    animation: shimmer 1.5s infinite;
+}
+
+.animate-shimmer-reverse {
+    animation: shimmer-reverse 1.5s infinite;
+}
+
+/* Custom Scrollbar for a premium look */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(249, 115, 22, 0.5);
+}

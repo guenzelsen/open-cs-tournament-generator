@@ -1,0 +1,26 @@
+export interface Team {
+    id: string;
+    name: string;
+    wins: number;
+    losses: number;
+    buchholzScore: number; // for tiebreakers if needed
+}
+
+export interface Match {
+    id: string;
+    team1Id: string;
+    team2Id: string;
+    team1Score?: number;
+    team2Score?: number;
+    winnerId?: string;
+    privateMatchCode: string; // 6 character code
+    round: number;
+}
+
+export interface TournamentState {
+    teams: Team[];
+    matches: Match[];
+    currentRound: number;
+    status: 'SETUP' | 'ACTIVE' | 'FINISHED';
+    maxRounds: number;
+}
