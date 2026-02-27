@@ -1,14 +1,6 @@
-@import "tailwindcss";
-
-@theme {
-    --color-cs2-dark: #0f172a;
-    --color-cs2-darker: #020617;
-    --color-cs2-orange: #f97316;
-    --color-cs2-orange-hover: #ea580c;
-    --color-cs2-blue: #3b82f6;
-    --color-cs2-text: #f8fafc;
-    --color-cs2-muted: #94a3b8;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 body {
     @apply bg-cs2-dark text-cs2-text h-screen w-screen overflow-x-hidden pt-8 pb-16;
