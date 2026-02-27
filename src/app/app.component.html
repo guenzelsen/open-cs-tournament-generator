@@ -1,0 +1,349 @@
+<div class="min-h-screen font-sans selection:bg-cs2-orange/30">
+
+    <!-- Header -->
+    <header
+        class="container mx-auto px-4 py-8 mb-4 border-b border-cs2-muted/20 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4 cursor-pointer" (click)="closeLobby(); closeTournament()">
+            <div
+                class="w-12 h-12 bg-gradient-to-tr from-cs2-orange to-cs2-orange-hover rounded flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.5)]">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1
+                    class="text-3xl md:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-cs2-muted">
+                    CS2 CLASH
+                </h1>
+                <p class="text-cs2-muted text-sm tracking-widest uppercase font-semibold">Tournament Generator</p>
+            </div>
+        </div>
+
+        <div *ngIf="isLoggedIn()"
+            class="flex items-center gap-4 bg-cs2-darker/50 px-4 py-2 rounded-xl border border-cs2-muted/20">
+            <span class="text-cs2-muted font-bold">{{ currentUser() }}</span>
+            <button (click)="logout()"
+                class="text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded transition-colors">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 max-w-6xl pb-16">
+
+        <!-- ================= AUTH VIEW ================= -->
+        <section *ngIf="!isLoggedIn()"
+            class="max-w-md mx-auto mt-16 bg-cs2-darker/80 backdrop-blur-xl border border-cs2-muted/10 rounded-2xl p-8 shadow-2xl animation-fade-in">
+            <h2 class="text-2xl font-black mb-2 text-white text-center uppercase tracking-wider">
+                {{ isLoginMode() ? 'Login' : 'Register' }}
+            </h2>
+            <p class="text-cs2-muted text-center mb-8">Access the Tournament Dashboard</p>
+
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="block text-sm text-cs2-muted mb-1 uppercase font-bold tracking-wider">Username</label>
+                    <input type="text" [ngModel]="authUsername()" (ngModelChange)="authUsername.set($event)"
+                        class="w-full bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange focus:ring-1 focus:ring-cs2-orange outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm text-cs2-muted mb-1 uppercase font-bold tracking-wider">Password</label>
+                    <input type="password" [ngModel]="authPassword()" (ngModelChange)="authPassword.set($event)"
+                        class="w-full bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange focus:ring-1 focus:ring-cs2-orange outline-none transition-all">
+                </div>
+            </div>
+
+            <button *ngIf="isLoginMode()" (click)="login()"
+                class="w-full bg-cs2-orange hover:bg-cs2-orange-hover text-white py-3 rounded-lg font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 mb-4">
+                Log In
+            </button>
+            <button *ngIf="!isLoginMode()" (click)="register()"
+                class="w-full bg-cs2-blue hover:bg-blue-600 text-white py-3 rounded-lg font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 mb-4">
+                Register Account
+            </button>
+
+            <div class="relative flex py-5 items-center">
+                <div class="flex-grow border-t border-cs2-muted/20"></div>
+                <span class="flex-shrink-0 mx-4 text-cs2-muted text-sm font-bold uppercase tracking-widest">or</span>
+                <div class="flex-grow border-t border-cs2-muted/20"></div>
+            </div>
+
+            <button (click)="loginWithSteam()"
+                class="w-full bg-[#171a21] hover:bg-[#2a475e] text-white py-3 rounded-lg font-bold uppercase tracking-wider transition-all shadow-lg border border-cs2-muted/10 active:scale-95 mb-6 flex items-center justify-center gap-3">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current">
+                    <path
+                        d="M11.979 0C5.394 0 0 5.38 0 11.979c0 4.704 2.71 8.761 6.641 10.74l3.153-9.112a2.82 2.82 0 0 1-.954-1.996c0-1.554 1.258-2.814 2.812-2.814 1.554 0 2.813 1.26 2.813 2.814a2.818 2.818 0 0 1-2.222 2.75l-1.954 5.642a12.003 12.003 0 0 0 1.69.12c6.586 0 11.98-5.381 11.98-11.98S18.565 0 11.979 0zm-5.071 18.067c-.23.067-.456.126-.677.173l2.062-5.96a4.276 4.276 0 0 0 1.488.94zm5.06-8.91C10.412 9.157 9.155 10.417 9.155 11.972c0 1.556 1.257 2.815 2.813 2.815 1.555 0 2.812-1.26 2.812-2.815 0-1.555-1.257-2.815-2.812-2.815z" />
+                </svg>
+                Sign in through Steam
+            </button>
+
+            <p class="text-center text-cs2-muted text-sm">
+                {{ isLoginMode() ? 'Need an account?' : 'Already have an account?' }}
+                <button (click)="isLoginMode.set(!isLoginMode())" class="text-cs2-orange hover:underline font-bold">
+                    {{ isLoginMode() ? 'Register' : 'Login' }}
+                </button>
+            </p>
+        </section>
+
+        <!-- ================= DASHBOARD VIEW ================= -->
+        <section *ngIf="isLoggedIn() && !activeTournament()" class="animation-fade-in">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold flex items-center gap-3">
+                    <span class="w-2 h-8 bg-cs2-blue rounded-full"></span>
+                    Your Tournaments
+                </h2>
+
+                <div class="flex gap-2">
+                    <input type="text" [ngModel]="newTournamentName()" (ngModelChange)="newTournamentName.set($event)"
+                        placeholder="New Tournament Name..."
+                        class="w-64 bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-2 text-white focus:border-cs2-orange outline-none">
+                    <button (click)="createTournament()"
+                        class="bg-cs2-orange hover:bg-cs2-orange-hover text-white px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 whitespace-nowrap">
+                        + Create
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div *ngIf="tournaments().length === 0"
+                    class="col-span-full py-12 text-center border border-dashed border-cs2-muted/20 rounded-2xl text-cs2-muted">
+                    No tournaments created yet.
+                </div>
+
+                <div *ngFor="let t of tournaments()"
+                    class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 shadow-xl hover:border-cs2-blue/30 transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold text-white">{{t.name}}</h3>
+                            <span class="px-2 py-1 text-xs font-bold rounded"
+                                [ngClass]="{'bg-green-500/20 text-green-400': t.status === 'ACTIVE', 'bg-cs2-muted/20 text-cs2-muted': t.status === 'SETUP', 'bg-red-500/20 text-red-400': t.status === 'FINISHED'}">
+                                {{t.status}}
+                            </span>
+                        </div>
+                        <p class="text-cs2-muted text-sm mb-6 flex justify-between">
+                            <span>Organizer: {{t.organizerId}}</span>
+                            <span>Rounds: {{t.currentRound}}/{{t.maxRounds}}</span>
+                        </p>
+                    </div>
+                    <button (click)="viewTournament(t.id)"
+                        class="w-full bg-cs2-dark/80 hover:bg-cs2-blue text-white py-2 rounded-lg font-bold border border-cs2-muted/20 hover:border-cs2-blue transition-all group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                        Open Tournament
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TOURNAMENT VIEW ================= -->
+        <ng-container *ngIf="activeTournament() && !activeLobby()">
+            <div
+                class="mb-8 flex items-center justify-between bg-cs2-darker/80 px-6 py-4 rounded-xl border border-cs2-muted/20">
+                <div class="flex items-center gap-4">
+                    <button (click)="closeTournament()" class="text-cs2-muted hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-black text-white">{{ activeTournament()!.name }}</h2>
+                    <span class="text-sm font-bold bg-cs2-dark px-3 py-1 rounded text-cs2-orange">Organizer: {{
+                        activeTournament()!.organizerId }}</span>
+                </div>
+            </div>
+
+            <!-- SETUP PHASE -->
+            <section *ngIf="status() === 'SETUP'" class="grid md:grid-cols-2 gap-8 animation-fade-in">
+                <div
+                    class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                        <span class="w-2 h-8 bg-cs2-orange rounded-full"></span> Add Teams
+                    </h2>
+
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" [ngModel]="newTeamName()" (ngModelChange)="newTeamName.set($event)"
+                            (keyup.enter)="addTeam()" placeholder="Enter Team Name..."
+                            class="flex-1 bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange outline-none">
+                        <button (click)="addTeam()"
+                            class="bg-cs2-orange hover:bg-cs2-orange-hover text-white px-6 py-3 rounded-lg font-bold shadow-lg active:scale-95">Add</button>
+                    </div>
+
+                    <button (click)="startTournament()" [disabled]="teams().length < 2 || teams().length % 2 !== 0"
+                        class="w-full bg-gradient-to-r from-cs2-blue to-blue-600 text-white py-4 rounded-xl font-black uppercase shadow-lg disabled:opacity-50 mt-4">
+                        Start Tournament
+                    </button>
+                </div>
+
+                <div class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-8 shadow-2xl">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center gap-3"><span
+                            class="w-2 h-8 bg-cs2-blue rounded-full"></span> Registered Teams ({{teams().length}})</h2>
+                    <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div *ngFor="let team of teams()"
+                            class="flex items-center justify-between bg-cs2-dark/50 border border-cs2-muted/10 rounded-lg p-4">
+                            <span class="font-semibold text-lg">{{team.name}}</span>
+                            <button (click)="removeTeam(team.id)" class="text-cs2-muted hover:text-red-500"><svg
+                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
+                                </svg></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ACTIVE PHASE -->
+            <section *ngIf="status() !== 'SETUP'" class="grid md:grid-cols-12 gap-8 animation-fade-in">
+                <div
+                    class="md:col-span-5 lg:col-span-4 bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 shadow-2xl sticky top-8">
+                    <h2 class="text-xl font-bold mb-6 uppercase text-cs2-muted">Standings</h2>
+                    <div class="space-y-2">
+                        <div *ngFor="let team of standings(); let i = index"
+                            class="flex justify-between p-3 rounded-lg border border-cs2-muted/5 bg-cs2-dark/40"
+                            [ngClass]="{'border-cs2-orange/30 bg-cs2-orange/10': i===0}">
+                            <div class="flex gap-3"><span class="text-cs2-muted">{{i + 1}}.</span><span
+                                    class="font-bold">{{team.name}}</span></div>
+                            <div class="flex gap-2 text-sm"><span class="text-green-400">{{team.wins}}W</span> - <span
+                                    class="text-red-400">{{team.losses}}L</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-7 lg:col-span-8 space-y-6">
+                    <div
+                        class="flex justify-between bg-cs2-darker/50 border border-cs2-orange/20 rounded-2xl p-6 relative">
+                        <div>
+                            <h2 class="text-3xl font-black"><span *ngIf="status() === 'ACTIVE'">ROUND
+                                    {{currentRound()}}</span><span *ngIf="status() === 'FINISHED'"
+                                    class="text-cs2-orange">TOURNAMENT COMPLETE</span></h2>
+                        </div>
+                        <button *ngIf="status() === 'ACTIVE'" (click)="advanceRound()"
+                            class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-lg font-bold flex gap-2">
+                            Advance Round <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div *ngIf="status() === 'ACTIVE'" class="grid gap-6">
+                        <div *ngFor="let match of activeMatches()"
+                            class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 relative">
+
+                            <div class="flex items-center justify-between mb-4 border-b border-cs2-muted/10 pb-4">
+                                <span class="text-cs2-muted text-xs uppercase font-bold tracking-widest">Match
+                                    #{{match.id.substring(0,8)}}</span>
+                                <button (click)="openLobby(match.id)"
+                                    class="text-xs bg-cs2-blue hover:bg-blue-600 px-4 py-2 rounded font-bold uppercase tracking-wider text-white shadow-lg transition-transform hover:scale-105 active:scale-95">
+                                    Join Match Lobby →
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4">
+                                <button (click)="reportWin(match.id, match.team1Id)" [disabled]="!!match.winnerId"
+                                    class="flex-1 p-4 rounded-xl border text-left"
+                                    [ngClass]="match.winnerId === match.team1Id ? 'bg-cs2-orange/10 border-cs2-orange' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-orange')">
+                                    <span class="text-xl font-bold">{{getTeamName(match.team1Id)}}</span>
+                                </button>
+                                <div
+                                    class="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 font-black text-cs2-muted">
+                                    VS</div>
+                                <button (click)="reportWin(match.id, match.team2Id)" [disabled]="!!match.winnerId"
+                                    class="flex-1 p-4 rounded-xl border text-right"
+                                    [ngClass]="match.winnerId === match.team2Id ? 'bg-cs2-blue/10 border-cs2-blue' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-blue')">
+                                    <span class="text-xl font-bold">{{getTeamName(match.team2Id)}}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </ng-container>
+
+        <!-- ================= MATCH LOBBY VIEW ================= -->
+        <ng-container *ngIf="activeLobby() as lobby">
+            <div class="animation-fade-in max-w-4xl mx-auto">
+
+                <button (click)="closeLobby()"
+                    class="mb-6 flex items-center gap-2 text-cs2-muted hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Tournament
+                </button>
+
+                <!-- Match Overview -->
+                <div
+                    class="bg-cs2-darker/80 border border-cs2-muted/20 rounded-2xl p-8 shadow-2xl text-center mb-8 relative overflow-hidden">
+                    <div
+                        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cs2-orange via-cs2-blue to-cs2-orange">
+                    </div>
+                    <h2 class="text-3xl font-black mb-2 uppercase tracking-widest text-white">Match Lobby</h2>
+                    <p class="text-cs2-muted mb-8">Vote for the map</p>
+
+                    <div class="flex items-center justify-center gap-8 md:gap-16">
+                        <div class="text-right flex-1">
+                            <h3 class="text-3xl md:text-4xl font-black text-cs2-orange">{{getTeamName(lobby.team1Id)}}
+                            </h3>
+                        </div>
+                        <div
+                            class="w-16 h-16 rounded-full bg-black flex items-center justify-center font-black text-cs2-muted text-xl flex-shrink-0 border border-cs2-muted/10 shadow-inner">
+                            VS</div>
+                        <div class="text-left flex-1">
+                            <h3 class="text-3xl md:text-4xl font-black text-cs2-blue">{{getTeamName(lobby.team2Id)}}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Map -->
+                <div *ngIf="selectedMap()"
+                    class="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center mb-8 animation-fade-in shadow-[0_0_30px_rgba(74,222,128,0.1)]">
+                    <h3 class="text-green-400 font-bold uppercase tracking-widest text-sm mb-2">Map Selected!</h3>
+                    <p
+                        class="text-5xl font-black text-white px-8 py-2 inline-block bg-black/40 rounded-lg shadow-inner">
+                        {{ selectedMap() }}
+                    </p>
+
+                    <div class="mt-8 pt-6 border-t border-green-500/20 max-w-sm mx-auto">
+                        <p class="text-cs2-muted text-sm uppercase font-bold tracking-widest mb-2">CS2 Private Match
+                            Code</p>
+                        <p
+                            class="font-mono text-3xl font-black text-white tracking-widest bg-black rounded py-3 border border-white/10">
+                            {{ activeMatches().find(m => m.id === lobby.matchId)?.privateMatchCode }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Map Voting Pool -->
+                <div *ngIf="!selectedMap()"
+                    class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-8 shadow-xl">
+                    <h3 class="text-xl font-bold mb-6 flex justify-between items-center text-white">
+                        <span>Map Veto Pool</span>
+                        <span class="text-sm font-normal text-cs2-muted bg-black/40 px-3 py-1 rounded">2 Votes to
+                            lock</span>
+                    </h3>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button *ngFor="let map of cs2Maps" (click)="voteForMap(map)"
+                            class="relative p-6 rounded-xl border border-cs2-muted/20 bg-cs2-dark hover:bg-cs2-darker hover:border-cs2-orange transition-all group overflow-hidden shadow-lg active:scale-95 text-center flex flex-col items-center justify-center min-h-[120px]">
+                            <div class="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay group-hover:opacity-30 transition-opacity"
+                                style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/73/Flat_tick_icon.svg');">
+                            </div>
+
+                            <span
+                                class="relative z-10 text-xl font-black text-white group-hover:text-cs2-orange transition-colors">{{map}}</span>
+
+                            <div class="relative z-10 mt-3 flex items-center gap-2">
+                                <div class="h-1.5 w-16 bg-black rounded-full overflow-hidden border border-white/5">
+                                    <div class="h-full bg-cs2-orange" [style.width]="(getMapVotes(map) * 50) + '%'">
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-cs2-muted">{{getMapVotes(map)}}/2</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+    </main>
+</div>
