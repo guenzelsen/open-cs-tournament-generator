@@ -94,6 +94,14 @@
                 </h2>
 
                 <div class="flex gap-2">
+                    <select [ngModel]="stateFilter()" (ngModelChange)="stateFilter.set($event)"
+                        class="bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-2 text-white focus:border-cs2-orange outline-none cursor-pointer">
+                        <option value="ALL">All States</option>
+                        <option value="SETUP">Setup</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="FINISHED">Finished</option>
+                    </select>
+
                     <input type="text" [ngModel]="newTournamentName()" (ngModelChange)="newTournamentName.set($event)"
                         placeholder="New Tournament Name..."
                         class="w-64 bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-2 text-white focus:border-cs2-orange outline-none">
@@ -105,12 +113,12 @@
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div *ngIf="tournaments().length === 0"
+                <div *ngIf="filteredTournaments().length === 0"
                     class="col-span-full py-12 text-center border border-dashed border-cs2-muted/20 rounded-2xl text-cs2-muted">
-                    No tournaments created yet.
+                    No tournaments found.
                 </div>
 
-                <div *ngFor="let t of tournaments()"
+                <div *ngFor="let t of filteredTournaments()"
                     class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 shadow-xl hover:border-cs2-blue/30 transition-all group flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-4">
@@ -121,7 +129,7 @@
                             </span>
                         </div>
                         <p class="text-cs2-muted text-sm mb-6 flex justify-between">
-                            <span>Organizer: {{t.organizerId}}</span>
+                            <span>Organizer: {{t.organizerName}}</span>
                             <span>Rounds: {{t.currentRound}}/{{t.maxRounds}}</span>
                         </p>
                     </div>
@@ -146,7 +154,7 @@
                     </button>
                     <h2 class="text-2xl font-black text-white">{{ activeTournament()!.name }}</h2>
                     <span class="text-sm font-bold bg-cs2-dark px-3 py-1 rounded text-cs2-orange">Organizer: {{
-                        activeTournament()!.organizerId }}</span>
+                        activeTournament()!.organizerName }}</span>
                 </div>
             </div>
 

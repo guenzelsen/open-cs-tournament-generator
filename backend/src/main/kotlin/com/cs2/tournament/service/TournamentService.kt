@@ -22,7 +22,7 @@ class TournamentService(
     data class TournamentResponse(
         val id: String,
         val name: String,
-        val organizerId: String,
+        val organizerName: String,
         val currentRound: Int,
         val status: TournamentStatus,
         val maxRounds: Int,
@@ -34,7 +34,7 @@ class TournamentService(
         return TournamentResponse(
             id = t.id,
             name = t.name,
-            organizerId = t.organizer.id,
+            organizerName = t.organizer.username,
             currentRound = t.currentRound,
             status = t.status,
             maxRounds = t.maxRounds,
