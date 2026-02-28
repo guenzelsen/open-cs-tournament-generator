@@ -10,7 +10,8 @@ data class User(
     @Id val id: String = UUID.randomUUID().toString(),
     @Column(unique = true) val username: String,
     val passwordHash: String,
-    @Column(unique = true) val steamId: String? = null
+    @Column(unique = true) val steamId: String? = null,
+    var pictureUrl: String? = null
 )
 
 @Entity
@@ -25,6 +26,8 @@ data class Tournament(
     var currentRound: Int = 0,
     @Enumerated(EnumType.STRING) var status: TournamentStatus = TournamentStatus.SETUP,
     var maxRounds: Int = 4,
+    var startTime: java.time.LocalDateTime? = null,
+    var pictureUrl: String? = null,
 
     @OneToMany(mappedBy = "tournament", cascade = [CascadeType.ALL], orphanRemoval = true)
     var teams: MutableList<TournamentTeam> = mutableListOf(),
@@ -42,6 +45,7 @@ data class Team(
     @JoinColumn(name = "owner_id")
     @JsonIgnore
     val owner: User,
+    var pictureUrl: String? = null,
     
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

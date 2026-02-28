@@ -16,7 +16,8 @@ class TeamService(
         val id: String,
         val name: String,
         val ownerUsername: String,
-        val playerUsernames: List<String>
+        val playerUsernames: List<String>,
+        val pictureUrl: String?
     )
 
     fun toResponse(t: Team): TeamResponse {
@@ -24,7 +25,8 @@ class TeamService(
             id = t.id,
             name = t.name,
             ownerUsername = t.owner.username,
-            playerUsernames = t.players.map { it.username }
+            playerUsernames = t.players.map { it.username },
+            pictureUrl = t.pictureUrl
         )
     }
 
@@ -56,9 +58,9 @@ class TeamService(
      * @return The created team response
      */
     @Transactional
-    fun createTeam(name: String, ownerUsername: String): TeamResponse {
+    fun createTeam(name: String, ownerUsername: String, pictureUrl: String? = null): TeamResponse {
         val user = userRepository.findByUsername(ownerUsername).orElseThrow { IllegalArgumentException("User not found") }
-        val t = Team(name = name, owner = user)
+        val t = Team(name = name, owner = user, pictureUrl = pictureUrl)
         // Add owner as a player by default? Yes, let's assume the owner also plays.
         t.players.add(user)
         return toResponse(teamRepository.save(t))

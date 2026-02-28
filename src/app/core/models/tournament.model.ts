@@ -5,6 +5,7 @@ export interface Team {
     wins: number;
     losses: number;
     buchholzScore: number; // for tiebreakers if needed
+    pictureUrl?: string;
 }
 
 export interface Match {
@@ -19,9 +20,14 @@ export interface Match {
 }
 
 export interface TournamentState {
+    id: string;
+    name: string;
+    organizerName: string;
     teams: Team[];
     matches: Match[];
     currentRound: number;
     status: 'SETUP' | 'ACTIVE' | 'FINISHED';
     maxRounds: number;
+    startTime?: string;
+    pictureUrl?: string;
 }

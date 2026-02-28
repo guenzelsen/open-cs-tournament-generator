@@ -12,7 +12,7 @@ class TournamentController(
     private val tournamentService: TournamentService
 ) {
 
-    data class CreateTournamentRequest(val name: String)
+    data class CreateTournamentRequest(val name: String, val startTime: java.time.LocalDateTime? = null, val pictureUrl: String? = null)
     data class AddTeamRequest(val globalTeamId: String)
     data class ReportWinRequest(val winnerId: String)
 
@@ -33,7 +33,7 @@ class TournamentController(
     @PostMapping
     fun createTournament(@RequestBody request: CreateTournamentRequest, principal: Principal): ResponseEntity<TournamentService.TournamentResponse> {
         return try {
-            val t = tournamentService.createTournament(request.name, principal.name)
+            val t = tournamentService.createTournament(request.name, principal.name, request.startTime, request.pictureUrl)
             ResponseEntity.ok(t)
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()
