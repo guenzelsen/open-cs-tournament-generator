@@ -62,6 +62,7 @@ data class TournamentTeam(
     val tournament: Tournament,
     val name: String,
     val globalTeamId: String,
+    var isComplete: Boolean = true,
     var wins: Int = 0,
     var losses: Int = 0,
     var buchholzScore: Int = 0
