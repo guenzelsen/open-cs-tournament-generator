@@ -95,7 +95,11 @@ class TournamentService(
     fun startTournament(tournamentId: String, username: String) {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
         if (t.organizer.username != username) throw IllegalAccessException("Only organizer can start")
-        if (t.teams.size < 2) throw IllegalStateException("Need at least 2 teams")
+        
+        // Remove any incomplete teams before starting
+        t.teams.removeIf { !it.isComplete }
+        
+        if (t.teams.size < 2) throw IllegalStateException("Need at least 2 complete teams to start")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Already started")
 
         t.status = TournamentStatus.ACTIVE

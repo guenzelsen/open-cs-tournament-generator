@@ -48,17 +48,21 @@ class TournamentServiceTest {
     }
 
     @Test
-    fun `should fail to start with odd number of teams`() {
+    fun `should fail to start with less than two complete teams`() {
         val user = User(id = "user1", username = "organizer", passwordHash = "hash")
         val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user)
-        tournament.teams = mutableListOf(TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament))
+        // One incomplete team, one complete team. Incomplete is removed, leaving 1 complete team. -> Fails.
+        tournament.teams = mutableListOf(
+            TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament, isComplete = false),
+            TournamentTeam(name = "FaZe", globalTeamId = "g2", tournament = tournament, isComplete = true)
+        )
 
         `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
 
         val exception = assertThrows(IllegalStateException::class.java) {
             service.startTournament("t1", "organizer")
         }
-        assertTrue(exception.message!!.contains("Need even number of teams"))
+        assertTrue(exception.message!!.contains("Need at least 2 complete teams to start"))
     }
 
     @Test
@@ -66,8 +70,8 @@ class TournamentServiceTest {
         val user = User(id = "user1", username = "organizer", passwordHash = "hash")
         val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user)
         tournament.teams = mutableListOf(
-            TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament),
-            TournamentTeam(name = "FaZe", globalTeamId = "g2", tournament = tournament)
+            TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament, isComplete = true),
+            TournamentTeam(name = "FaZe", globalTeamId = "g2", tournament = tournament, isComplete = true)
         )
 
         `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
