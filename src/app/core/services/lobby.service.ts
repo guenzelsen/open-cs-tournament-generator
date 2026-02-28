@@ -6,7 +6,7 @@ export interface LobbyResponse {
     matchId: string;
     team1Id: string;
     team2Id: string;
-    mapVotes: { [key: string]: number };
+    bannedMaps: string[];
     selectedMap: string | null;
 }
 
@@ -30,13 +30,14 @@ export class LobbyService {
         }
     }
 
-    async voteMap(matchId: string, mapName: string) {
+    async banMap(matchId: string, mapName: string) {
         try {
-            const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/vote`, { mapName }));
+            const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/ban`, { mapName }));
             this.activeLobbyState.set(data);
-        } catch (e) {
-            console.error('Failed to vote', e);
-            throw new Error("Failed to cast vote.");
+        } catch (e: any) {
+            console.error('Failed to ban map', e);
+            if (e.status === 403) throw new Error("Not your turn to ban.");
+            throw new Error("Failed to ban map.");
         }
     }
 

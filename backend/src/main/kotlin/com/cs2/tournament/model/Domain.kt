@@ -101,13 +101,12 @@ data class MatchLobby(
     @JsonIgnore
     val match: Match,
     
-    // Simple state mapping to track votes for team 1 vs team 2 
-    // We can use an element collection to store map votes.
+    // Track sequence of map bans. First to ban is team1, second team2, etc.
     @ElementCollection
-    @CollectionTable(name = "match_map_votes", joinColumns = [JoinColumn(name = "lobby_id")])
-    @MapKeyColumn(name = "map_name")
-    @Column(name = "vote_count")
-    val mapVotes: MutableMap<String, Int> = mutableMapOf(),
+    @CollectionTable(name = "match_banned_maps", joinColumns = [JoinColumn(name = "lobby_id")])
+    @OrderColumn(name = "ban_order")
+    @Column(name = "map_name")
+    val bannedMaps: MutableList<String> = mutableListOf(),
 
     var selectedMap: String? = null
 )
