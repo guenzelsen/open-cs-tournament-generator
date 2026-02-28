@@ -79,7 +79,7 @@ export class AppComponent {
     selectedMap = this.lobbyService.selectedMap;
 
     // Available Maps (Reduced to 7 for Pick/Ban where 6 are banned and 1 remains)
-    cs2Maps = ['Mirage', 'Inferno', 'Nuke', 'Overpass', 'Vertigo', 'Ancient', 'Anubis'];
+    cs2Maps = ['Ancient', 'Dust II', 'Inferno', 'Mirage', 'Nuke', 'Overpass', 'Anubis'];
 
     constructor() {
         const params = new URLSearchParams(window.location.search);

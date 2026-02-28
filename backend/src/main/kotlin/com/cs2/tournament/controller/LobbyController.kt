@@ -25,7 +25,7 @@ class LobbyController(
         val selectedMap: String?
     )
 
-    private val cs2Maps = listOf("Mirage", "Inferno", "Nuke", "Overpass", "Vertigo", "Ancient", "Anubis")
+    private val cs2Maps = listOf("Ancient", "Dust II", "Inferno", "Mirage", "Nuke", "Overpass", "Anubis")
 
     /**
      * Retrieves the current state of a match lobby.
