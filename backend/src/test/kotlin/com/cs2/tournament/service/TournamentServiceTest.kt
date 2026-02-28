@@ -1,12 +1,13 @@
 package com.cs2.tournament.service
 
-import com.cs2.tournament.model.Team
+import com.cs2.tournament.model.TournamentTeam
 import com.cs2.tournament.model.Tournament
 import com.cs2.tournament.model.TournamentStatus
 import com.cs2.tournament.model.User
 import com.cs2.tournament.repository.MatchRepository
 import com.cs2.tournament.repository.TournamentRepository
 import com.cs2.tournament.repository.UserRepository
+import com.cs2.tournament.repository.TeamRepository
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,6 +20,7 @@ class TournamentServiceTest {
     private lateinit var tournamentRepository: TournamentRepository
     private lateinit var userRepository: UserRepository
     private lateinit var matchRepository: MatchRepository
+    private lateinit var teamRepository: TeamRepository
     private lateinit var service: TournamentService
 
     @BeforeEach
@@ -26,7 +28,8 @@ class TournamentServiceTest {
         tournamentRepository = mock(TournamentRepository::class.java)
         userRepository = mock(UserRepository::class.java)
         matchRepository = mock(MatchRepository::class.java)
-        service = TournamentService(tournamentRepository, userRepository, matchRepository)
+        teamRepository = mock(TeamRepository::class.java)
+        service = TournamentService(tournamentRepository, userRepository, matchRepository, teamRepository)
     }
 
     @Test
@@ -48,7 +51,7 @@ class TournamentServiceTest {
     fun `should fail to start with odd number of teams`() {
         val user = User(id = "user1", username = "organizer", passwordHash = "hash")
         val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user)
-        tournament.teams = mutableListOf(Team(name = "Navi", tournament = tournament))
+        tournament.teams = mutableListOf(TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament))
 
         `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
 
@@ -63,8 +66,8 @@ class TournamentServiceTest {
         val user = User(id = "user1", username = "organizer", passwordHash = "hash")
         val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user)
         tournament.teams = mutableListOf(
-            Team(name = "Navi", tournament = tournament),
-            Team(name = "FaZe", tournament = tournament)
+            TournamentTeam(name = "Navi", globalTeamId = "g1", tournament = tournament),
+            TournamentTeam(name = "FaZe", globalTeamId = "g2", tournament = tournament)
         )
 
         `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))

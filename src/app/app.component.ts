@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TournamentService } from './core/services/tournament.service';
 import { AuthService } from './core/services/auth.service';
 import { LobbyService } from './core/services/lobby.service';
+import { TeamService } from './core/services/team.service';
 
 @Component({
     selector: 'app-root',
@@ -15,14 +16,20 @@ export class AppComponent {
     authService = inject(AuthService);
     tournamentService = inject(TournamentService);
     lobbyService = inject(LobbyService);
+    teamService = inject(TeamService);
 
     // View States
+    activeTab = signal<'TOURNAMENTS' | 'TEAMS'>('TOURNAMENTS');
     isLoginMode = signal(true);
     authUsername = signal('');
     authPassword = signal('');
 
     newTournamentName = signal('');
-    newTeamName = signal('');
+
+    // Team States
+    newGlobalTeamName = signal('');
+    newPlayerUsername = signal('');
+    teamSearchTerm = signal('');
 
     // Service Signals Exposed
     isLoggedIn = this.authService.isLoggedIn;
@@ -49,6 +56,10 @@ export class AppComponent {
     activeMatches = this.tournamentService.activeMatches;
     maxRounds = this.tournamentService.maxRounds;
 
+    // Global Teams
+    myTeams = this.teamService.myTeams;
+    searchedTeams = this.teamService.searchedTeams;
+
     activeLobby = this.lobbyService.activeLobby;
     selectedMap = this.lobbyService.selectedMap;
 
@@ -65,6 +76,7 @@ export class AppComponent {
         effect(() => {
             if (this.isLoggedIn()) {
                 this.tournamentService.loadTournaments();
+                this.teamService.loadMyTeams();
             }
         });
     }
@@ -104,12 +116,42 @@ export class AppComponent {
         this.tournamentService.activeTournamentDetails.set(null);
     }
 
+    // --- GLOBAL TEAMS DASHBOARD --- //
+    async createGlobalTeam() {
+        if (this.newGlobalTeamName().trim()) {
+            await this.teamService.createTeam(this.newGlobalTeamName());
+            this.newGlobalTeamName.set('');
+        }
+    }
+
+    async addPlayer(teamId: string) {
+        if (this.newPlayerUsername().trim()) {
+            await this.teamService.addPlayer(teamId, this.newPlayerUsername());
+            this.newPlayerUsername.set('');
+        }
+    }
+
+    async removePlayer(teamId: string, username: string) {
+        await this.teamService.removePlayer(teamId, username);
+    }
+
     // --- TOURNAMENT --- //
-    async addTeam() {
+    async searchTeamsForTournament() {
+        if (this.teamSearchTerm().trim()) {
+            await this.teamService.searchTeams(this.teamSearchTerm());
+        }
+    }
+
+    async addTeam(globalTeamId: string) {
         const tId = this.activeTournament()?.id;
-        if (tId && this.newTeamName().trim()) {
-            await this.tournamentService.addTeam(tId, this.newTeamName().trim());
-            this.newTeamName.set('');
+        if (tId && globalTeamId) {
+            try {
+                await this.tournamentService.addTeam(tId, globalTeamId);
+                this.teamSearchTerm.set('');
+                this.teamService.searchedTeams.set([]);
+            } catch (e: any) {
+                alert(e.message);
+            }
         }
     }
 

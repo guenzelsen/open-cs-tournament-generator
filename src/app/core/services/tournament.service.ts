@@ -74,13 +74,13 @@ export class TournamentService {
         }
     }
 
-    async addTeam(tournamentId: string, name: string) {
+    async addTeam(tournamentId: string, globalTeamId: string) {
         try {
-            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/teams`, { name }));
+            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/teams`, { globalTeamId }));
             await this.loadTournament(tournamentId);
         } catch (e) {
             console.error(e);
-            throw new Error("Failed to add team. Are you the organizer?");
+            throw new Error("Failed to add team. Are you the organizer? Does it have 5-6 players?");
         }
     }
 

@@ -27,7 +27,7 @@ data class Tournament(
     var maxRounds: Int = 4,
 
     @OneToMany(mappedBy = "tournament", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var teams: MutableList<Team> = mutableListOf(),
+    var teams: MutableList<TournamentTeam> = mutableListOf(),
 
     @OneToMany(mappedBy = "tournament", cascade = [CascadeType.ALL], orphanRemoval = true)
     var matches: MutableList<Match> = mutableListOf()
@@ -37,11 +37,31 @@ data class Tournament(
 @Table(name = "teams")
 data class Team(
     @Id val id: String = UUID.randomUUID().toString(),
+    @Column(unique = true) val name: String,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    @JsonIgnore
+    val owner: User,
+    
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "team_players",
+        joinColumns = [JoinColumn(name = "team_id")],
+        inverseJoinColumns = [JoinColumn(name = "user_id")]
+    )
+    var players: MutableSet<User> = mutableSetOf()
+)
+
+@Entity
+@Table(name = "tournament_teams")
+data class TournamentTeam(
+    @Id val id: String = UUID.randomUUID().toString(),
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tournament_id")
     @JsonIgnore
     val tournament: Tournament,
     val name: String,
+    val globalTeamId: String,
     var wins: Int = 0,
     var losses: Int = 0,
     var buchholzScore: Int = 0
