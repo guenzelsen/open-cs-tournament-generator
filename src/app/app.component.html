@@ -35,9 +35,9 @@
         <!-- Tabs Navigation -->
         <div *ngIf="isLoggedIn()"
             class="flex border-b border-cs2-muted/20 mb-8 mt-4 gap-8 text-sm font-bold tracking-widest uppercase">
-            <button (click)="activeTab.set('TOURNAMENTS')"
+            <button (click)="setTab('TOURNAMENTS')"
                 [ngClass]="activeTab() === 'TOURNAMENTS' ? 'text-cs2-orange border-b-4 border-cs2-orange pb-2 transition-all' : 'text-cs2-muted hover:text-white pb-2 transition-all'">Tournaments</button>
-            <button (click)="activeTab.set('TEAMS')"
+            <button (click)="setTab('TEAMS')"
                 [ngClass]="activeTab() === 'TEAMS' ? 'text-cs2-blue border-b-4 border-cs2-blue pb-2 transition-all' : 'text-cs2-muted hover:text-white pb-2 transition-all'">Global
                 Teams</button>
         </div>
@@ -61,6 +61,11 @@
                     <input type="password" [ngModel]="authPassword()" (ngModelChange)="authPassword.set($event)"
                         class="w-full bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange focus:ring-1 focus:ring-cs2-orange outline-none transition-all">
                 </div>
+            </div>
+
+            <div *ngIf="loginError()"
+                class="bg-red-500/10 border border-red-500/50 text-red-500 text-sm font-bold text-center py-2 px-4 rounded-lg mb-4">
+                {{ loginError() }}
             </div>
 
             <button *ngIf="isLoginMode()" (click)="login()"
