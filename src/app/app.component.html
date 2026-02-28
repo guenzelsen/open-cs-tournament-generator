@@ -438,26 +438,35 @@
                     class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-8 shadow-xl">
                     <h3 class="text-xl font-bold mb-6 flex justify-between items-center text-white">
                         <span>Map Veto Pool</span>
-                        <span class="text-sm font-normal text-cs2-muted bg-black/40 px-3 py-1 rounded">2 Votes to
-                            lock</span>
+                        <span *ngIf="isMyTurnToBan()"
+                            class="text-sm font-bold text-cs2-darker bg-cs2-orange px-3 py-1 rounded uppercase tracking-widest animation-pulse">Your
+                            Turn to Ban</span>
+                        <span *ngIf="!isMyTurnToBan()"
+                            class="text-sm font-normal text-cs2-muted bg-black/40 px-3 py-1 rounded">Waiting for
+                            Opponent...</span>
                     </h3>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button *ngFor="let map of cs2Maps" (click)="voteForMap(map)"
-                            class="relative p-6 rounded-xl border border-cs2-muted/20 bg-cs2-dark hover:bg-cs2-darker hover:border-cs2-orange transition-all group overflow-hidden shadow-lg active:scale-95 text-center flex flex-col items-center justify-center min-h-[120px]">
-                            <div class="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay group-hover:opacity-30 transition-opacity"
+                        <button *ngFor="let map of cs2Maps" (click)="banMap(map)"
+                            [disabled]="isMapBanned(map) || !isMyTurnToBan()"
+                            class="relative p-6 rounded-xl border border-cs2-muted/20 transition-all group overflow-hidden shadow-lg text-center flex flex-col items-center justify-center min-h-[120px]"
+                            [ngClass]="isMapBanned(map) ? 'bg-black/50 opacity-50 cursor-not-allowed grayscale' : 'bg-cs2-dark hover:bg-cs2-darker hover:border-cs2-orange active:scale-95'">
+
+                            <div *ngIf="isMapBanned(map)"
+                                class="absolute inset-x-0 top-1/2 h-1 bg-red-500/80 -translate-y-1/2 rotate-12 z-20">
+                            </div>
+
+                            <div *ngIf="!isMapBanned(map)"
+                                class="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-overlay group-hover:opacity-30 transition-opacity"
                                 style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/73/Flat_tick_icon.svg');">
                             </div>
 
-                            <span
-                                class="relative z-10 text-xl font-black text-white group-hover:text-cs2-orange transition-colors">{{map}}</span>
+                            <span class="relative z-10 text-xl font-black transition-colors"
+                                [ngClass]="isMapBanned(map) ? 'text-red-500 line-through' : 'text-white group-hover:text-cs2-orange'">{{map}}</span>
 
-                            <div class="relative z-10 mt-3 flex items-center gap-2">
-                                <div class="h-1.5 w-16 bg-black rounded-full overflow-hidden border border-white/5">
-                                    <div class="h-full bg-cs2-orange" [style.width]="(getMapVotes(map) * 50) + '%'">
-                                    </div>
-                                </div>
-                                <span class="text-xs font-bold text-cs2-muted">{{getMapVotes(map)}}/2</span>
+                            <div *ngIf="isMapBanned(map)"
+                                class="relative z-10 mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">
+                                Banned
                             </div>
                         </button>
                     </div>

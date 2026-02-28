@@ -78,8 +78,8 @@ export class AppComponent {
     activeLobby = this.lobbyService.activeLobby;
     selectedMap = this.lobbyService.selectedMap;
 
-    // Available Maps
-    cs2Maps = ['Mirage', 'Inferno', 'Nuke', 'Overpass', 'Vertigo', 'Ancient', 'Anubis', 'Dust II'];
+    // Available Maps (Reduced to 7 for Pick/Ban where 6 are banned and 1 remains)
+    cs2Maps = ['Mirage', 'Inferno', 'Nuke', 'Overpass', 'Vertigo', 'Ancient', 'Anubis'];
 
     constructor() {
         const params = new URLSearchParams(window.location.search);
@@ -285,14 +285,33 @@ export class AppComponent {
         this.lobbyService.clearLobby();
     }
 
-    async voteForMap(mapName: string) {
+    async banMap(mapName: string) {
         const lId = this.activeLobby()?.matchId;
         if (lId) {
-            await this.lobbyService.voteMap(lId, mapName);
+            try {
+                await this.lobbyService.banMap(lId, mapName);
+            } catch (e: any) { alert(e.message); }
         }
     }
 
-    getMapVotes(mapName: string): number {
-        return this.activeLobby()?.mapVotes[mapName] || 0;
+    isMapBanned(mapName: string): boolean {
+        return this.activeLobby()?.bannedMaps?.includes(mapName) || false;
+    }
+
+    isMyTurnToBan(): boolean {
+        const lobby = this.activeLobby();
+        if (!lobby || lobby.selectedMap) return false;
+
+        const isTeam1Turn = (lobby.bannedMaps?.length || 0) % 2 === 0;
+        const activeTeamId = isTeam1Turn ? lobby.team1Id : lobby.team2Id;
+
+        // Since only team captains can ban, we check if the logged in user owns the global team linked to this tournament team.
+        // We find the active tournament team from the tournament state.
+        const tournamentTeam = this.teams().find(t => t.id === activeTeamId);
+        if (!tournamentTeam) return false;
+
+        // Verify if it maps to one of my own global teams where I am the owner
+        const isMyGlobalTeam = this.myTeams().some(gt => gt.id === tournamentTeam.globalTeamId && gt.ownerUsername === this.currentUser());
+        return isMyGlobalTeam;
     }
 }

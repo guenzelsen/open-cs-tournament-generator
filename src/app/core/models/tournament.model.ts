@@ -1,5 +1,6 @@
 export interface Team {
     id: string;
+    globalTeamId: string;
     name: string;
     isComplete: boolean;
     wins: number;
