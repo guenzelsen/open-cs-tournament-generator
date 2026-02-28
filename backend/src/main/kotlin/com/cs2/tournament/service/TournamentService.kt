@@ -1,13 +1,14 @@
 package com.cs2.tournament.service
 
 import com.cs2.tournament.model.Match
-import com.cs2.tournament.model.Team
+import com.cs2.tournament.model.TournamentTeam
 import com.cs2.tournament.model.Tournament
 import com.cs2.tournament.model.TournamentStatus
 import com.cs2.tournament.model.MatchLobby
 import com.cs2.tournament.repository.MatchRepository
 import com.cs2.tournament.repository.TournamentRepository
 import com.cs2.tournament.repository.UserRepository
+import com.cs2.tournament.repository.TeamRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -16,7 +17,8 @@ import java.util.UUID
 class TournamentService(
     private val tournamentRepository: TournamentRepository,
     private val userRepository: UserRepository,
-    private val matchRepository: MatchRepository
+    private val matchRepository: MatchRepository,
+    private val teamRepository: TeamRepository
 ) {
 
     data class TournamentResponse(
@@ -26,7 +28,7 @@ class TournamentService(
         val currentRound: Int,
         val status: TournamentStatus,
         val maxRounds: Int,
-        val teams: List<Team>,
+        val teams: List<TournamentTeam>,
         val matches: List<Match>
     )
 
@@ -65,12 +67,17 @@ class TournamentService(
     }
 
     @Transactional
-    fun addTeam(tournamentId: String, teamName: String, username: String): Team {
+    fun addTeam(tournamentId: String, globalTeamId: String, username: String): TournamentTeam {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
         if (t.organizer.username != username) throw IllegalAccessException("Only organizer can add teams")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
 
-        val newTeam = Team(name = teamName, tournament = t)
+        val globalTeam = teamRepository.findById(globalTeamId).orElseThrow { IllegalArgumentException("Global team not found") }
+        if (globalTeam.players.size !in 5..6) {
+            throw IllegalStateException("Team must have between 5 and 6 players")
+        }
+
+        val newTeam = TournamentTeam(name = globalTeam.name, globalTeamId = globalTeam.id, tournament = t)
         t.teams.add(newTeam)
         tournamentRepository.save(t)
         return newTeam
@@ -137,7 +144,7 @@ class TournamentService(
 
     private fun generatePairings(t: Tournament) {
         val standings = t.teams.sortedWith(
-            compareByDescending<Team> { it.wins }.thenBy { it.losses }
+            compareByDescending<TournamentTeam> { it.wins }.thenBy { it.losses }
         ).toMutableList()
 
         val newMatches = mutableListOf<Match>()

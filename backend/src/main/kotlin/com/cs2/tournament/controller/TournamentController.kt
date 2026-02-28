@@ -1,6 +1,6 @@
 package com.cs2.tournament.controller
 
-import com.cs2.tournament.model.Team
+import com.cs2.tournament.model.TournamentTeam
 import com.cs2.tournament.service.TournamentService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -13,7 +13,7 @@ class TournamentController(
 ) {
 
     data class CreateTournamentRequest(val name: String)
-    data class AddTeamRequest(val name: String)
+    data class AddTeamRequest(val globalTeamId: String)
     data class ReportWinRequest(val winnerId: String)
 
     @GetMapping
@@ -41,9 +41,9 @@ class TournamentController(
     }
 
     @PostMapping("/{id}/teams")
-    fun addTeam(@PathVariable id: String, @RequestBody request: AddTeamRequest, principal: Principal): ResponseEntity<Team> {
+    fun addTeam(@PathVariable id: String, @RequestBody request: AddTeamRequest, principal: Principal): ResponseEntity<TournamentTeam> {
         return try {
-            val team = tournamentService.addTeam(id, request.name, principal.name)
+            val team = tournamentService.addTeam(id, request.globalTeamId, principal.name)
             ResponseEntity.ok(team)
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()
