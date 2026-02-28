@@ -1,6 +1,7 @@
 export interface Team {
     id: string;
     name: string;
+    isComplete: boolean;
     wins: number;
     losses: number;
     buchholzScore: number; // for tiebreakers if needed

@@ -256,9 +256,7 @@
                         </div>
                     </div>
 
-                    <p class="text-cs2-muted text-xs mb-6">* Team must have 5 or 6 players to be added.</p>
-
-                    <button (click)="startTournament()" [disabled]="teams().length < 2 || teams().length % 2 !== 0"
+                    <button (click)="startTournament()" [disabled]="teams().length < 2"
                         class="w-full bg-gradient-to-r from-cs2-blue to-blue-600 text-white py-4 rounded-xl font-black uppercase shadow-lg disabled:opacity-50 mt-4">
                         Start Tournament
                     </button>
@@ -270,7 +268,11 @@
                     <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         <div *ngFor="let team of teams()"
                             class="flex items-center justify-between bg-cs2-dark/50 border border-cs2-muted/10 rounded-lg p-4">
-                            <span class="font-semibold text-lg">{{team.name}}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-lg">{{team.name}}</span>
+                                <span *ngIf="team?.isComplete === false"
+                                    class="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded font-bold tracking-widest uppercase">Incomplete</span>
+                            </div>
                             <button (click)="removeTeam(team.id)" class="text-cs2-muted hover:text-red-500"><svg
                                     class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-width="2"
@@ -291,8 +293,12 @@
                         <div *ngFor="let team of standings(); let i = index"
                             class="flex justify-between p-3 rounded-lg border border-cs2-muted/5 bg-cs2-dark/40"
                             [ngClass]="{'border-cs2-orange/30 bg-cs2-orange/10': i===0}">
-                            <div class="flex gap-3"><span class="text-cs2-muted">{{i + 1}}.</span><span
-                                    class="font-bold">{{team.name}}</span></div>
+                            <div class="flex gap-3 items-center">
+                                <span class="text-cs2-muted">{{i + 1}}.</span>
+                                <span class="font-bold">{{team.name}}</span>
+                                <span *ngIf="team?.isComplete === false"
+                                    class="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded font-bold uppercase">Incomplete</span>
+                            </div>
                             <div class="flex gap-2 text-sm"><span class="text-green-400">{{team.wins}}W</span> - <span
                                     class="text-red-400">{{team.losses}}L</span></div>
                         </div>

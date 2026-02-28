@@ -73,11 +73,9 @@ class TournamentService(
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
 
         val globalTeam = teamRepository.findById(globalTeamId).orElseThrow { IllegalArgumentException("Global team not found") }
-        if (globalTeam.players.size !in 5..6) {
-            throw IllegalStateException("Team must have between 5 and 6 players")
-        }
+        val isTeamComplete = globalTeam.players.size >= 5
 
-        val newTeam = TournamentTeam(name = globalTeam.name, globalTeamId = globalTeam.id, tournament = t)
+        val newTeam = TournamentTeam(name = globalTeam.name, globalTeamId = globalTeam.id, tournament = t, isComplete = isTeamComplete)
         t.teams.add(newTeam)
         tournamentRepository.save(t)
         return newTeam
@@ -97,7 +95,7 @@ class TournamentService(
     fun startTournament(tournamentId: String, username: String) {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
         if (t.organizer.username != username) throw IllegalAccessException("Only organizer can start")
-        if (t.teams.size < 2 || t.teams.size % 2 != 0) throw IllegalStateException("Need even number of teams")
+        if (t.teams.size < 2) throw IllegalStateException("Need at least 2 teams")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Already started")
 
         t.status = TournamentStatus.ACTIVE
@@ -149,6 +147,13 @@ class TournamentService(
 
         val newMatches = mutableListOf<Match>()
         val pastMatches = t.matches
+
+        // Handle odd number of teams by giving a BYE to the team with the lowest score that hasn't had a BYE yet.
+        // For simplicity, we just give the last team in the standings a BYE.
+        if (standings.size % 2 != 0) {
+            val byeTeam = standings.removeLast()
+            byeTeam.wins++
+        }
 
         while (standings.size >= 2) {
             val team1 = standings.removeAt(0)
