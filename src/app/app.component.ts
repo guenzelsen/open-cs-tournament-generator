@@ -23,6 +23,7 @@ export class AppComponent {
     isLoginMode = signal(true);
     authUsername = signal('');
     authPassword = signal('');
+    loginError = signal('');
 
     newTournamentName = signal('');
 
@@ -85,19 +86,47 @@ export class AppComponent {
         window.location.href = 'http://localhost:8080/api/auth/steam';
     }
 
+    setTab(tab: 'TOURNAMENTS' | 'TEAMS') {
+        this.activeTab.set(tab);
+        this.tournamentService.activeTournamentDetails.set(null);
+    }
+
     // --- AUTH --- //
     async login() {
-        await this.authService.login(this.authUsername(), this.authPassword());
+        this.loginError.set('');
+        if (!this.authUsername() || !this.authPassword()) {
+            this.loginError.set('Please enter username and password');
+            return;
+        }
+        const success = await this.authService.login(this.authUsername(), this.authPassword());
+        if (!success) {
+            this.loginError.set('Invalid credentials');
+        }
     }
 
     async register() {
-        await this.authService.register(this.authUsername(), this.authPassword());
+        this.loginError.set('');
+        const success = await this.authService.register(this.authUsername(), this.authPassword());
+        if (!success) {
+            this.loginError.set('Registration failed');
+        }
     }
 
     logout() {
         this.authService.logout();
-        this.tournamentService.activeTournamentDetails.set(null);
+        this.tournamentService.clearData();
+        this.teamService.myTeams.set([]);
+        this.teamService.searchedTeams.set([]);
         this.lobbyService.clearLobby();
+
+        // Clear forms
+        this.authUsername.set('');
+        this.authPassword.set('');
+        this.newTournamentName.set('');
+        this.newGlobalTeamName.set('');
+        this.newPlayerUsername.set('');
+        this.teamSearchTerm.set('');
+        this.loginError.set('');
     }
 
     // --- DASHBOARD --- //

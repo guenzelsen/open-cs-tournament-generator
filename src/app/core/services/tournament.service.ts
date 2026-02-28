@@ -63,6 +63,11 @@ export class TournamentService {
         }
     }
 
+    clearData() {
+        this.tournamentsList.set([]);
+        this.activeTournamentDetails.set(null);
+    }
+
     // 1. Setup Phase Methods
     async createTournament(name: string) {
         try {
