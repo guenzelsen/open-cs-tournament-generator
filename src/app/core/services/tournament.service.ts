@@ -10,6 +10,8 @@ export interface TournamentListResponse {
     currentRound: number;
     status: string;
     maxRounds: number;
+    startTime?: string;
+    pictureUrl?: string;
     teams: Team[];
     matches: Match[];
 }
@@ -69,9 +71,9 @@ export class TournamentService {
     }
 
     // 1. Setup Phase Methods
-    async createTournament(name: string) {
+    async createTournament(name: string, startTime?: string, pictureUrl?: string) {
         try {
-            await firstValueFrom(this.http.post<TournamentListResponse>(this.apiUrl, { name }));
+            await firstValueFrom(this.http.post<TournamentListResponse>(this.apiUrl, { name, startTime, pictureUrl }));
             await this.loadTournaments();
         } catch (e) {
             console.error('Failed to create tournament', e);

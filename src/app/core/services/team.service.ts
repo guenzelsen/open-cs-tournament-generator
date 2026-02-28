@@ -7,6 +7,7 @@ export interface GlobalTeam {
     name: string;
     ownerUsername: string;
     playerUsernames: string[];
+    pictureUrl?: string;
 }
 
 @Injectable({
@@ -37,9 +38,9 @@ export class TeamService {
         }
     }
 
-    async createTeam(name: string) {
+    async createTeam(name: string, pictureUrl?: string) {
         try {
-            await firstValueFrom(this.http.post<GlobalTeam>(this.apiUrl, { name }));
+            await firstValueFrom(this.http.post<GlobalTeam>(this.apiUrl, { name, pictureUrl }));
             await this.loadMyTeams();
         } catch (e: any) {
             console.error('Failed to create team', e);

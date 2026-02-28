@@ -28,6 +28,8 @@ class TournamentService(
         val currentRound: Int,
         val status: TournamentStatus,
         val maxRounds: Int,
+        val startTime: java.time.LocalDateTime?,
+        val pictureUrl: String?,
         val teams: List<TournamentTeam>,
         val matches: List<Match>
     )
@@ -40,6 +42,8 @@ class TournamentService(
             currentRound = t.currentRound,
             status = t.status,
             maxRounds = t.maxRounds,
+            startTime = t.startTime,
+            pictureUrl = t.pictureUrl,
             teams = t.teams,
             matches = t.matches
         )
@@ -57,11 +61,13 @@ class TournamentService(
     }
 
     @Transactional
-    fun createTournament(name: String, organizerUsername: String): TournamentResponse {
+    fun createTournament(name: String, organizerUsername: String, startTime: java.time.LocalDateTime? = null, pictureUrl: String? = null): TournamentResponse {
         val user = userRepository.findByUsername(organizerUsername).orElseThrow { IllegalArgumentException("User not found") }
         val t = Tournament(
             name = name,
-            organizer = user
+            organizer = user,
+            startTime = startTime,
+            pictureUrl = pictureUrl
         )
         return toResponse(tournamentRepository.save(t))
     }

@@ -5,6 +5,7 @@ import { TournamentService } from './core/services/tournament.service';
 import { AuthService } from './core/services/auth.service';
 import { LobbyService } from './core/services/lobby.service';
 import { TeamService } from './core/services/team.service';
+import { UploadService } from './core/services/upload.service';
 
 @Component({
     selector: 'app-root',
@@ -17,6 +18,18 @@ export class AppComponent {
     tournamentService = inject(TournamentService);
     lobbyService = inject(LobbyService);
     teamService = inject(TeamService);
+    uploadService = inject(UploadService);
+
+    // Dialog States
+    isCreateTournamentModalOpen = signal(false);
+    newTournamentStartTime = signal('');
+    newTournamentPicture = signal<File | null>(null);
+
+    isCreateTeamModalOpen = signal(false);
+    newGlobalTeamPicture = signal<File | null>(null);
+
+    isProfileModalOpen = signal(false);
+    profilePicture = signal<File | null>(null);
 
     // View States
     activeTab = signal<'TOURNAMENTS' | 'TEAMS'>('TOURNAMENTS');
@@ -35,6 +48,7 @@ export class AppComponent {
     // Service Signals Exposed
     isLoggedIn = this.authService.isLoggedIn;
     currentUser = this.authService.currentUser;
+    currentUserPicture = this.authService.currentUserPicture;
 
     tournaments = this.tournamentService.allTournaments;
 
@@ -130,10 +144,26 @@ export class AppComponent {
     }
 
     // --- DASHBOARD --- //
-    async createTournament() {
+    openCreateTournamentModal() {
+        this.newTournamentName.set('');
+        this.newTournamentStartTime.set('');
+        this.newTournamentPicture.set(null);
+        this.isCreateTournamentModalOpen.set(true);
+    }
+
+    onTournamentPictureSelected(event: Event) {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) this.newTournamentPicture.set(file);
+    }
+
+    async submitCreateTournament() {
         if (this.newTournamentName().trim()) {
-            await this.tournamentService.createTournament(this.newTournamentName());
-            this.newTournamentName.set('');
+            let picUrl: string | undefined;
+            if (this.newTournamentPicture()) {
+                picUrl = await this.uploadService.uploadImage(this.newTournamentPicture()!);
+            }
+            await this.tournamentService.createTournament(this.newTournamentName(), this.newTournamentStartTime() || undefined, picUrl);
+            this.isCreateTournamentModalOpen.set(false);
         }
     }
 
@@ -146,10 +176,39 @@ export class AppComponent {
     }
 
     // --- GLOBAL TEAMS DASHBOARD --- //
-    async createGlobalTeam() {
+    openCreateTeamModal() {
+        this.newGlobalTeamName.set('');
+        this.newGlobalTeamPicture.set(null);
+        this.isCreateTeamModalOpen.set(true);
+    }
+
+    onTeamPictureSelected(event: Event) {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) this.newGlobalTeamPicture.set(file);
+    }
+
+    async submitCreateGlobalTeam() {
         if (this.newGlobalTeamName().trim()) {
-            await this.teamService.createTeam(this.newGlobalTeamName());
-            this.newGlobalTeamName.set('');
+            let picUrl: string | undefined;
+            if (this.newGlobalTeamPicture()) {
+                picUrl = await this.uploadService.uploadImage(this.newGlobalTeamPicture()!);
+            }
+            await this.teamService.createTeam(this.newGlobalTeamName(), picUrl);
+            this.isCreateTeamModalOpen.set(false);
+        }
+    }
+
+    onProfilePictureSelected(event: Event) {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) this.profilePicture.set(file);
+    }
+
+    async submitUpdateProfile() {
+        if (this.profilePicture()) {
+            const picUrl = await this.uploadService.uploadImage(this.profilePicture()!);
+            await this.authService.updateProfilePicture(picUrl);
+            this.profilePicture.set(null);
+            this.isProfileModalOpen.set(false);
         }
     }
 

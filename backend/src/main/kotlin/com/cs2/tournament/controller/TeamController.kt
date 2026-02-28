@@ -11,7 +11,7 @@ class TeamController(
     private val teamService: TeamService
 ) {
 
-    data class CreateTeamRequest(val name: String)
+    data class CreateTeamRequest(val name: String, val pictureUrl: String? = null)
     data class PlayerRequest(val username: String)
 
     @GetMapping("/search")
@@ -27,7 +27,7 @@ class TeamController(
     @PostMapping
     fun createTeam(@RequestBody request: CreateTeamRequest, principal: Principal): ResponseEntity<TeamService.TeamResponse> {
         return try {
-            val t = teamService.createTeam(request.name, principal.name)
+            val t = teamService.createTeam(request.name, principal.name, request.pictureUrl)
             ResponseEntity.ok(t)
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()

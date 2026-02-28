@@ -22,7 +22,19 @@
 
         <div *ngIf="isLoggedIn()"
             class="flex items-center gap-4 bg-cs2-darker/50 px-4 py-2 rounded-xl border border-cs2-muted/20">
-            <span class="text-cs2-muted font-bold">{{ currentUser() }}</span>
+            <span class="text-cs2-muted font-bold cursor-pointer hover:text-white flex items-center gap-2"
+                (click)="isProfileModalOpen.set(true)">
+                <img *ngIf="currentUserPicture()" [src]="currentUserPicture()"
+                    class="w-8 h-8 rounded-full object-cover border border-cs2-muted/30" />
+                <div *ngIf="!currentUserPicture()"
+                    class="w-8 h-8 rounded-full bg-cs2-dark border border-cs2-muted/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-cs2-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                {{ currentUser() }}
+            </span>
             <button (click)="logout()"
                 class="text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded transition-colors">
                 Logout
@@ -117,10 +129,7 @@
                         <option value="FINISHED">Finished</option>
                     </select>
 
-                    <input type="text" [ngModel]="newTournamentName()" (ngModelChange)="newTournamentName.set($event)"
-                        placeholder="New Tournament Name..."
-                        class="w-64 bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-2 text-white focus:border-cs2-orange outline-none">
-                    <button (click)="createTournament()"
+                    <button (click)="openCreateTournamentModal()"
                         class="bg-cs2-orange hover:bg-cs2-orange-hover text-white px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 whitespace-nowrap">
                         + Create
                     </button>
@@ -137,16 +146,25 @@
                     class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 shadow-xl hover:border-cs2-blue/30 transition-all group flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-xl font-bold text-white">{{t.name}}</h3>
-                            <span class="px-2 py-1 text-xs font-bold rounded"
+                            <div class="flex items-center gap-3">
+                                <img *ngIf="t.pictureUrl" [src]="t.pictureUrl"
+                                    class="w-10 h-10 rounded-lg object-cover" />
+                                <h3 class="text-xl font-bold text-white">{{t.name}}</h3>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-bold rounded flex-shrink-0"
                                 [ngClass]="{'bg-green-500/20 text-green-400': t.status === 'ACTIVE', 'bg-cs2-muted/20 text-cs2-muted': t.status === 'SETUP', 'bg-red-500/20 text-red-400': t.status === 'FINISHED'}">
                                 {{t.status}}
                             </span>
                         </div>
-                        <p class="text-cs2-muted text-sm mb-6 flex justify-between">
+                        <p class="text-cs2-muted text-sm flex justify-between">
                             <span>Organizer: {{t.organizerName}}</span>
                             <span>Rounds: {{t.currentRound}}/{{t.maxRounds}}</span>
                         </p>
+                        <p *ngIf="t.startTime"
+                            class="text-xs text-cs2-muted mt-2 border-t border-cs2-muted/10 pt-2 mb-6 text-center">
+                            Starts: {{ t.startTime | date:'medium' }}
+                        </p>
+                        <p *ngIf="!t.startTime" class="mb-6"></p>
                     </div>
                     <button (click)="viewTournament(t.id)"
                         class="w-full bg-cs2-dark/80 hover:bg-cs2-blue text-white py-2 rounded-lg font-bold border border-cs2-muted/20 hover:border-cs2-blue transition-all group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]">
@@ -165,10 +183,7 @@
                 </h2>
 
                 <div class="flex gap-2">
-                    <input type="text" [ngModel]="newGlobalTeamName()" (ngModelChange)="newGlobalTeamName.set($event)"
-                        placeholder="New Team Name..."
-                        class="w-64 bg-cs2-dark/80 border border-cs2-muted/20 rounded-lg px-4 py-2 text-white focus:border-cs2-blue outline-none">
-                    <button (click)="createGlobalTeam()"
+                    <button (click)="openCreateTeamModal()"
                         class="bg-cs2-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 whitespace-nowrap">
                         + Create Team
                     </button>
@@ -184,7 +199,11 @@
                 <div *ngFor="let team of myTeams()"
                     class="bg-cs2-darker/50 border border-cs2-muted/10 rounded-2xl p-6 shadow-xl">
                     <div class="flex justify-between items-start mb-4">
-                        <h3 class="text-xl font-bold text-white">{{team.name}}</h3>
+                        <div class="flex items-center gap-3">
+                            <img *ngIf="team.pictureUrl" [src]="team.pictureUrl"
+                                class="w-10 h-10 rounded-lg object-cover" />
+                            <h3 class="text-xl font-bold text-white">{{team.name}}</h3>
+                        </div>
                         <span class="text-cs2-muted text-sm">Players: {{team.playerUsernames.length}}/6</span>
                     </div>
 
@@ -246,10 +265,13 @@
                         class="bg-cs2-dark border border-cs2-muted/20 rounded-lg mb-6 max-h-40 overflow-y-auto custom-scrollbar">
                         <div *ngFor="let st of searchedTeams()"
                             class="p-3 border-b border-cs2-muted/10 hover:bg-cs2-darker flex justify-between items-center transition-colors">
-                            <div>
-                                <span class="font-bold block">{{st.name}}</span>
-                                <span class="text-xs text-cs2-muted">{{st.playerUsernames.length}} players (Owner:
-                                    {{st.ownerUsername}})</span>
+                            <div class="flex items-center gap-3">
+                                <img *ngIf="st.pictureUrl" [src]="st.pictureUrl" class="w-8 h-8 rounded object-cover" />
+                                <div>
+                                    <span class="font-bold block">{{st.name}}</span>
+                                    <span class="text-xs text-cs2-muted">{{st.playerUsernames.length}} players (Owner:
+                                        {{st.ownerUsername}})</span>
+                                </div>
                             </div>
                             <button (click)="addTeam(st.id)"
                                 class="bg-cs2-orange hover:bg-cs2-orange-hover text-white px-4 py-1.5 rounded text-sm font-bold shadow active:scale-95">Add</button>
@@ -442,6 +464,100 @@
                 </div>
             </div>
         </ng-container>
+
+        <!-- MODALS -->
+
+        <!-- Create Tournament Modal -->
+        <div *ngIf="isCreateTournamentModalOpen()"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
+            <div class="bg-cs2-darker border border-cs2-muted/20 rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+                <button (click)="isCreateTournamentModalOpen.set(false)"
+                    class="absolute top-4 right-4 text-cs2-muted hover:text-white">✕</button>
+                <h2 class="text-2xl font-bold mb-6 text-white uppercase tracking-widest text-center">New Tournament</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-cs2-muted mb-2 uppercase tracking-wider">Tournament
+                            Name *</label>
+                        <input type="text" [ngModel]="newTournamentName()"
+                            (ngModelChange)="newTournamentName.set($event)"
+                            class="w-full bg-cs2-dark border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-cs2-muted mb-2 uppercase tracking-wider">Start
+                            Time</label>
+                        <input type="datetime-local" [ngModel]="newTournamentStartTime()"
+                            (ngModelChange)="newTournamentStartTime.set($event)"
+                            class="w-full bg-cs2-dark border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-orange outline-none">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold text-cs2-muted mb-2 uppercase tracking-wider">Picture</label>
+                        <input type="file" accept="image/*" (change)="onTournamentPictureSelected($event)"
+                            class="w-full text-cs2-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-cs2-dark file:text-white hover:file:bg-cs2-orange/20 cursor-pointer">
+                    </div>
+                </div>
+
+                <button (click)="submitCreateTournament()"
+                    class="w-full mt-8 bg-cs2-orange hover:bg-cs2-orange-hover text-white py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">Submit</button>
+            </div>
+        </div>
+
+        <!-- Create Team Modal -->
+        <div *ngIf="isCreateTeamModalOpen()"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
+            <div class="bg-cs2-darker border border-cs2-muted/20 rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+                <button (click)="isCreateTeamModalOpen.set(false)"
+                    class="absolute top-4 right-4 text-cs2-muted hover:text-white">✕</button>
+                <h2 class="text-2xl font-bold mb-6 text-white uppercase tracking-widest text-center">New Team</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-cs2-muted mb-2 uppercase tracking-wider">Team Name
+                            *</label>
+                        <input type="text" [ngModel]="newGlobalTeamName()"
+                            (ngModelChange)="newGlobalTeamName.set($event)"
+                            class="w-full bg-cs2-dark border border-cs2-muted/20 rounded-lg px-4 py-3 text-white focus:border-cs2-blue outline-none">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-bold text-cs2-muted mb-2 uppercase tracking-wider">Picture</label>
+                        <input type="file" accept="image/*" (change)="onTeamPictureSelected($event)"
+                            class="w-full text-cs2-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-cs2-dark file:text-white hover:file:bg-cs2-blue/20 cursor-pointer">
+                    </div>
+                </div>
+
+                <button (click)="submitCreateGlobalTeam()"
+                    class="w-full mt-8 bg-cs2-blue hover:bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">Submit</button>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div *ngIf="isProfileModalOpen()"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
+            <div class="bg-cs2-darker border border-cs2-muted/20 rounded-2xl shadow-2xl p-8 max-w-sm w-full relative">
+                <button (click)="isProfileModalOpen.set(false)"
+                    class="absolute top-4 right-4 text-cs2-muted hover:text-white">✕</button>
+                <h2 class="text-2xl font-bold mb-6 text-white uppercase tracking-widest text-center">Profile Settings
+                </h2>
+
+                <div class="space-y-4">
+                    <div class="flex flex-col items-center gap-4">
+                        <img *ngIf="currentUserPicture()" [src]="currentUserPicture()"
+                            class="w-24 h-24 rounded-full object-cover border border-cs2-muted">
+                        <div *ngIf="!currentUserPicture()"
+                            class="w-24 h-24 rounded-full bg-cs2-dark border border-cs2-muted/20 flex items-center justify-center text-4xl font-bold text-cs2-muted uppercase">
+                            {{ currentUser()?.charAt(0) }}</div>
+                        <input type="file" accept="image/*" (change)="onProfilePictureSelected($event)"
+                            class="w-full text-cs2-muted file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-cs2-dark file:text-white hover:file:bg-cs2-muted/20 cursor-pointer">
+                    </div>
+                </div>
+
+                <button (click)="submitUpdateProfile()"
+                    class="w-full mt-8 bg-white text-black py-3 rounded-xl font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">Save
+                    Changes</button>
+            </div>
+        </div>
 
     </main>
 </div>
