@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TournamentService } from './core/services/tournament.service';
@@ -29,6 +29,17 @@ export class AppComponent {
     currentUser = this.authService.currentUser;
 
     tournaments = this.tournamentService.allTournaments;
+
+    // State Filter for Tournaments
+    stateFilter = signal<'ALL' | 'SETUP' | 'ACTIVE' | 'FINISHED'>('ALL');
+
+    filteredTournaments = computed(() => {
+        const all = this.tournaments();
+        const filter = this.stateFilter();
+        if (filter === 'ALL') return all;
+        return all.filter(t => t.status === filter);
+    });
+
     activeTournament = this.tournamentService.activeTournament;
 
     status = this.tournamentService.status;

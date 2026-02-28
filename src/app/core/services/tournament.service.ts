@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 export interface TournamentListResponse {
     id: string;
     name: string;
-    organizerId: string;
+    organizerName: string;
     currentRound: number;
     status: string;
     maxRounds: number;
