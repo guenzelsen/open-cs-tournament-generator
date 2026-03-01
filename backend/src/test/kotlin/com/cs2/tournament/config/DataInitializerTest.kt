@@ -23,11 +23,11 @@ class DataInitializerTest {
     lateinit var tournamentRepository: TournamentRepository
 
     @Test
-    fun `data initializer creates three users, two teams and one tournament`() {
+    fun `data initializer creates 41 users, 8 teams and one tournament`() {
         // DataInitializer should run on context load.
         // We verify the database is populated.
-        assertEquals(3, userRepository.count(), "Should have 3 users")
-        assertEquals(2, teamRepository.count(), "Should have 2 teams")
+        assertEquals(41, userRepository.count(), "Should have 41 users (1 admin + 40 players)")
+        assertEquals(8, teamRepository.count(), "Should have 8 teams")
         assertEquals(1, tournamentRepository.count(), "Should have 1 tournament")
     }
 }

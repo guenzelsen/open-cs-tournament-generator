@@ -29,30 +29,34 @@ class DataInitializer(
                 passwordHash = passwordEncoder.encode("admin")!!,
                 pictureUrl = "https://ui-avatars.com/api/?name=Admin"
             )
-            val user1 = User(
-                username = "user1",
-                passwordHash = passwordEncoder.encode("user")!!,
-                pictureUrl = "https://ui-avatars.com/api/?name=User+One"
-            )
-            val user2 = User(
-                username = "user2",
-                passwordHash = passwordEncoder.encode("user")!!,
-                pictureUrl = "https://ui-avatars.com/api/?name=User+Two"
-            )
-            userRepository.saveAll(listOf(admin, user1, user2))
+            val users = mutableListOf<User>(admin)
+            for (i in 1..40) {
+                users.add(User(
+                    username = "user$i",
+                    passwordHash = passwordEncoder.encode("user")!!,
+                    pictureUrl = "https://ui-avatars.com/api/?name=User+$i"
+                ))
+            }
+            userRepository.saveAll(users)
 
-            val team1 = Team(
-                name = "Debug Team Alpha",
-                owner = user1,
-                players = mutableSetOf(user1, admin)
-            )
-            
-            val team2 = Team(
-                name = "Debug Team Bravo",
-                owner = user2,
-                players = mutableSetOf(user2)
-            )
-            teamRepository.saveAll(listOf(team1, team2))
+            val teams = mutableListOf<Team>()
+            var userIndex = 1
+            for (i in 1..8) {
+                val teamPlayers = mutableSetOf<User>()
+                val owner = users[userIndex]
+                for (j in 1..5) {
+                    teamPlayers.add(users[userIndex])
+                    userIndex++
+                }
+                teams.add(
+                    Team(
+                        name = "Debug Team $i",
+                        owner = owner,
+                        players = teamPlayers
+                    )
+                )
+            }
+            teamRepository.saveAll(teams)
 
             val dummyTournament = Tournament(
                 name = "Debug CS2 Championship",
@@ -66,7 +70,8 @@ class DataInitializer(
             println("==============================")
             println("=== Debug Data Initialized ===")
             println("==============================")
-            println("Users: admin(pass:admin), user1(pass:user), user2(pass:user)")
+            println("Users: admin(pass:admin), user1 to user40 (pass:user)")
+            println("Teams: 8 teams with 5 players each have been generated")
         }
     }
 }
