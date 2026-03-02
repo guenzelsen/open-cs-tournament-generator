@@ -15,6 +15,8 @@ class TournamentController(
     data class CreateTournamentRequest(val name: String, val startTime: java.time.LocalDateTime? = null, val pictureUrl: String? = null)
     data class AddTeamRequest(val globalTeamId: String)
     data class ReportWinRequest(val winnerId: String)
+    data class AddAdminRequest(val username: String)
+    data class ProposeResultRequest(val reportedWinnerId: String, val reportedScore: String)
 
     @GetMapping
     fun getAllTournaments(): ResponseEntity<List<TournamentService.TournamentResponse>> {
@@ -60,6 +62,26 @@ class TournamentController(
         }
     }
 
+    @PostMapping("/{id}/admins")
+    fun addAdmin(@PathVariable id: String, @RequestBody request: AddAdminRequest, principal: Principal): ResponseEntity<TournamentService.TournamentResponse> {
+        return try {
+            val t = tournamentService.addAdmin(id, request.username, principal.name)
+            ResponseEntity.ok(t)
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
+    @DeleteMapping("/{id}/admins/{username}")
+    fun removeAdmin(@PathVariable id: String, @PathVariable username: String, principal: Principal): ResponseEntity<TournamentService.TournamentResponse> {
+        return try {
+            val t = tournamentService.removeAdmin(id, username, principal.name)
+            ResponseEntity.ok(t)
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
     @PostMapping("/{id}/start")
     fun startTournament(@PathVariable id: String, principal: Principal): ResponseEntity<Void> {
         return try {
@@ -74,6 +96,26 @@ class TournamentController(
     fun reportResult(@PathVariable matchId: String, @RequestBody request: ReportWinRequest, principal: Principal): ResponseEntity<Void> {
         return try {
             tournamentService.reportMatchResult(matchId, request.winnerId, principal.name)
+            ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
+    @PostMapping("/matches/{matchId}/propose-result")
+    fun proposeResult(@PathVariable matchId: String, @RequestBody request: ProposeResultRequest, principal: Principal): ResponseEntity<Void> {
+        return try {
+            tournamentService.proposeMatchResult(matchId, request.reportedWinnerId, request.reportedScore, principal.name)
+            ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
+    @PostMapping("/matches/{matchId}/confirm-result")
+    fun confirmResult(@PathVariable matchId: String, principal: Principal): ResponseEntity<Void> {
+        return try {
+            tournamentService.confirmMatchResult(matchId, principal.name)
             ResponseEntity.ok().build()
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()
