@@ -7,6 +7,8 @@ import com.cs2.tournament.repository.UserRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @RestController
 @RequestMapping("/api/lobbies")
@@ -22,7 +24,8 @@ class LobbyController(
         val team1Id: String,
         val team2Id: String,
         val bannedMaps: List<String>,
-        val selectedMap: String?
+        val selectedMap: String?,
+        val lastBanTime: LocalDateTime?
     )
 
     private val cs2Maps = listOf("Ancient", "Dust II", "Inferno", "Mirage", "Nuke", "Overpass", "Anubis")
@@ -43,7 +46,8 @@ class LobbyController(
                 team1Id = lobby.match.team1Id,
                 team2Id = lobby.match.team2Id,
                 bannedMaps = lobby.bannedMaps,
-                selectedMap = lobby.selectedMap
+                selectedMap = lobby.selectedMap,
+                lastBanTime = lobby.lastBanTime
             )
         )
     }
@@ -105,6 +109,9 @@ class LobbyController(
             lobby.selectedMap = remainingMap
         }
 
+        // If it's the first ban, or we just banned, reset timer
+        lobby.lastBanTime = LocalDateTime.now()
+
         lobbyRepository.save(lobby)
         
         return ResponseEntity.ok(
@@ -113,7 +120,82 @@ class LobbyController(
                 team1Id = lobby.match.team1Id,
                 team2Id = lobby.match.team2Id,
                 bannedMaps = lobby.bannedMaps,
-                selectedMap = lobby.selectedMap
+                selectedMap = lobby.selectedMap,
+                lastBanTime = lobby.lastBanTime
+            )
+        )
+    }
+
+    @PostMapping("/{matchId}/auto-ban")
+    fun autoBanMap(@PathVariable matchId: String): ResponseEntity<LobbyResponse> {
+        val lobby = lobbyRepository.findByMatchId(matchId).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+            
+        if (lobby.selectedMap != null) {
+            return ResponseEntity.badRequest().build()
+        }
+
+        val lastTime = lobby.lastBanTime
+        if (lastTime != null) {
+            val secondsElapsed = ChronoUnit.SECONDS.between(lastTime, LocalDateTime.now())
+            if (secondsElapsed < 60) {
+                return ResponseEntity.badRequest().build() // Time hasn't expired yet
+            }
+        } else if (lobby.bannedMaps.isEmpty()) {
+            // First ban hasn't started yet technically, but we can allow auto-ban if we assume it starts immediately
+            // Often we want an explicit start. Let's say if lastBanTime is null, we just set it now to start the timer
+            lobby.lastBanTime = LocalDateTime.now()
+            lobbyRepository.save(lobby)
+            return getLobbyResponse(lobby)
+        }
+
+        val availableMaps = cs2Maps.filter { !lobby.bannedMaps.contains(it) }
+        if (availableMaps.isNotEmpty()) {
+            lobby.bannedMaps.add(availableMaps.random())
+        }
+
+        if (lobby.bannedMaps.size == cs2Maps.size - 1) {
+            val remainingMap = cs2Maps.first { !lobby.bannedMaps.contains(it) }
+            lobby.selectedMap = remainingMap
+            lobby.lastBanTime = null
+        } else {
+            lobby.lastBanTime = LocalDateTime.now()
+        }
+
+        lobbyRepository.save(lobby)
+        return getLobbyResponse(lobby)
+    }
+
+    @PostMapping("/{matchId}/restart")
+    fun restartLobby(@PathVariable matchId: String, principal: Principal): ResponseEntity<LobbyResponse> {
+        val lobby = lobbyRepository.findByMatchId(matchId).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+
+        val tournament = tournamentRepository.findById(lobby.match.tournament.id).orElse(null)
+            ?: return ResponseEntity.notFound().build()
+            
+        val isOrganizerOrAdmin = tournament.organizer.username == principal.name || tournament.admins.any { it.username == principal.name }
+        if (!isOrganizerOrAdmin) {
+            return ResponseEntity.status(403).build()
+        }
+
+        lobby.bannedMaps.clear()
+        lobby.selectedMap = null
+        lobby.lastBanTime = LocalDateTime.now()
+
+        lobbyRepository.save(lobby)
+        return getLobbyResponse(lobby)
+    }
+
+    private fun getLobbyResponse(lobby: com.cs2.tournament.model.MatchLobby): ResponseEntity<LobbyResponse> {
+        return ResponseEntity.ok(
+            LobbyResponse(
+                matchId = lobby.match.id,
+                team1Id = lobby.match.team1Id,
+                team2Id = lobby.match.team2Id,
+                bannedMaps = lobby.bannedMaps,
+                selectedMap = lobby.selectedMap,
+                lastBanTime = lobby.lastBanTime
             )
         )
     }

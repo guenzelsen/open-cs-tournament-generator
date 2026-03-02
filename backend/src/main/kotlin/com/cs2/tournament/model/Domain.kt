@@ -33,7 +33,15 @@ data class Tournament(
     var teams: MutableList<TournamentTeam> = mutableListOf(),
 
     @OneToMany(mappedBy = "tournament", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var matches: MutableList<Match> = mutableListOf()
+    var matches: MutableList<Match> = mutableListOf(),
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "tournament_admins",
+        joinColumns = [JoinColumn(name = "tournament_id")],
+        inverseJoinColumns = [JoinColumn(name = "user_id")]
+    )
+    var admins: MutableSet<User> = mutableSetOf()
 )
 
 @Entity
@@ -108,7 +116,9 @@ data class MatchLobby(
     @Column(name = "map_name")
     val bannedMaps: MutableList<String> = mutableListOf(),
 
-    var selectedMap: String? = null
+    var selectedMap: String? = null,
+    
+    var lastBanTime: java.time.LocalDateTime? = null
 )
 
 enum class TournamentStatus {

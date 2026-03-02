@@ -4,6 +4,7 @@ import com.cs2.tournament.model.TournamentTeam
 import com.cs2.tournament.model.Tournament
 import com.cs2.tournament.model.TournamentStatus
 import com.cs2.tournament.model.User
+import com.cs2.tournament.model.Match
 import com.cs2.tournament.repository.MatchRepository
 import com.cs2.tournament.repository.TournamentRepository
 import com.cs2.tournament.repository.UserRepository
@@ -81,5 +82,34 @@ class TournamentServiceTest {
         assertEquals(TournamentStatus.ACTIVE, tournament.status)
         assertEquals(1, tournament.currentRound)
         assertEquals(1, tournament.matches.size)
+    }
+
+    @Test
+    fun `should allow admin to report match result`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val admin = User(id = "user2", username = "adminUser", passwordHash = "hash")
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer, admins = mutableSetOf(admin))
+        val match = Match(id = "m1", tournament = tournament, team1Id = "tt1", team2Id = "tt2", round = 1, privateMatchCode = "AAAAAA")
+
+        `when`(matchRepository.findById("m1")).thenReturn(Optional.of(match))
+        
+        service.reportMatchResult("m1", "tt1", "adminUser")
+
+        assertEquals("tt1", match.winnerId)
+    }
+
+    @Test
+    fun `should restrict non-admin from reporting match result`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val normalUser = User(id = "user3", username = "pleb", passwordHash = "hash")
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer)
+        val match = Match(id = "m1", tournament = tournament, team1Id = "tt1", team2Id = "tt2", round = 1, privateMatchCode = "AAAAAA")
+
+        `when`(matchRepository.findById("m1")).thenReturn(Optional.of(match))
+        
+        val exception = assertThrows(IllegalAccessException::class.java) {
+            service.reportMatchResult("m1", "tt1", "pleb")
+        }
+        assertTrue(exception.message!!.contains("organizer or admins"))
     }
 }

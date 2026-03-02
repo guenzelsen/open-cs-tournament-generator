@@ -31,7 +31,8 @@ class TournamentService(
         val startTime: java.time.LocalDateTime?,
         val pictureUrl: String?,
         val teams: List<TournamentTeam>,
-        val matches: List<Match>
+        val matches: List<Match>,
+        val adminUsernames: List<String>
     )
 
     fun toResponse(t: Tournament): TournamentResponse {
@@ -45,7 +46,8 @@ class TournamentService(
             startTime = t.startTime,
             pictureUrl = t.pictureUrl,
             teams = t.teams,
-            matches = t.matches
+            matches = t.matches,
+            adminUsernames = t.admins.map { it.username }
         )
     }
 
@@ -69,6 +71,25 @@ class TournamentService(
             startTime = startTime,
             pictureUrl = pictureUrl
         )
+        return toResponse(tournamentRepository.save(t))
+    }
+
+    @Transactional
+    fun addAdmin(tournamentId: String, newAdminUsername: String, requestorUsername: String): TournamentResponse {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != requestorUsername) throw IllegalAccessException("Only organizer can add admins")
+        
+        val newAdmin = userRepository.findByUsername(newAdminUsername).orElseThrow { IllegalArgumentException("User not found") }
+        t.admins.add(newAdmin)
+        return toResponse(tournamentRepository.save(t))
+    }
+
+    @Transactional
+    fun removeAdmin(tournamentId: String, adminUsername: String, requestorUsername: String): TournamentResponse {
+        val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
+        if (t.organizer.username != requestorUsername) throw IllegalAccessException("Only organizer can remove admins")
+        
+        t.admins.removeIf { it.username == adminUsername }
         return toResponse(tournamentRepository.save(t))
     }
 
@@ -118,7 +139,8 @@ class TournamentService(
     fun reportMatchResult(matchId: String, winnerId: String, username: String) {
         val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }
         val t = match.tournament
-        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can report wins")
+        val isOrganizerOrAdmin = t.organizer.username == username || t.admins.any { it.username == username }
+        if (!isOrganizerOrAdmin) throw IllegalAccessException("Only organizer or admins can report wins")
         if (match.winnerId != null) return
 
         match.winnerId = winnerId
@@ -134,7 +156,8 @@ class TournamentService(
     @Transactional
     fun advanceRound(tournamentId: String, username: String) {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
-        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can advance")
+        val isOrganizerOrAdmin = t.organizer.username == username || t.admins.any { it.username == username }
+        if (!isOrganizerOrAdmin) throw IllegalAccessException("Only organizer or admins can advance")
 
         val currentActiveMatches = t.matches.filter { it.round == t.currentRound }
         if (currentActiveMatches.any { it.winnerId == null }) {

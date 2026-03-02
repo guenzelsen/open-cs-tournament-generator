@@ -81,6 +81,10 @@ export class AppComponent {
     // Available Maps (Reduced to 7 for Pick/Ban where 6 are banned and 1 remains)
     cs2Maps = ['Ancient', 'Dust II', 'Inferno', 'Mirage', 'Nuke', 'Overpass', 'Anubis'];
 
+    // Map Vote Timer
+    banTimer = signal<number>(0);
+    private timerInterval: any;
+
     constructor() {
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
@@ -93,6 +97,36 @@ export class AppComponent {
                 this.tournamentService.loadTournaments();
                 this.teamService.loadMyTeams();
             }
+        });
+
+        // Effect to manage the lobby timer
+        effect((onCleanup) => {
+            const lobbyTimeStr = this.lobbyService.lastBanTime();
+            const lobbyMatchId = this.activeLobby()?.matchId;
+            const selectedMap = this.selectedMap();
+
+            clearInterval(this.timerInterval);
+
+            if (lobbyTimeStr && !selectedMap && lobbyMatchId) {
+                const startTime = new Date(lobbyTimeStr).getTime();
+                this.timerInterval = setInterval(async () => {
+                    const now = new Date().getTime();
+                    const diffSeconds = Math.floor((now - startTime) / 1000);
+                    const remaining = Math.max(0, 60 - diffSeconds);
+                    this.banTimer.set(remaining);
+
+                    if (remaining === 0 && this.isMyTurnToBan()) {
+                        clearInterval(this.timerInterval);
+                        await this.lobbyService.autoBan(lobbyMatchId);
+                    }
+                }, 1000);
+            } else {
+                this.banTimer.set(0);
+            }
+
+            onCleanup(() => {
+                clearInterval(this.timerInterval);
+            });
         });
     }
 
@@ -274,6 +308,49 @@ export class AppComponent {
 
     getTeamName(id: string): string {
         return this.teams().find(t => t.id === id)?.name || 'Unknown';
+    }
+
+    // --- ADMIN LOGIC --- //
+    isOrganizerOrAdmin(): boolean {
+        const t = this.activeTournament();
+        if (!t) return false;
+        const username = this.currentUser();
+        return t.organizerName === username || t.adminUsernames?.includes(username || '');
+    }
+
+    async addAdmin(username: string) {
+        const tId = this.activeTournament()?.id;
+        if (tId && username.trim()) {
+            try {
+                await this.tournamentService.addAdmin(tId, username.trim());
+            } catch (e: any) { alert(e.message); }
+        }
+    }
+
+    async removeAdmin(username: string) {
+        const tId = this.activeTournament()?.id;
+        if (tId) {
+            try {
+                await this.tournamentService.removeAdmin(tId, username);
+            } catch (e: any) { alert(e.message); }
+        }
+    }
+
+    async forceWin(matchId: string, teamId: string) {
+        if (!confirm("Are you sure you want to force this win?")) return;
+        try {
+            await this.tournamentService.reportMatchResult(matchId, teamId);
+        } catch (e: any) { alert(e.message); }
+    }
+
+    async restartVote() {
+        const matchId = this.activeLobby()?.matchId;
+        if (!confirm("Are you sure you want to restart the map vote?")) return;
+        if (matchId) {
+            try {
+                await this.lobbyService.restartLobby(matchId);
+            } catch (e: any) { alert(e.message); }
+        }
     }
 
     // --- LOBBY --- //

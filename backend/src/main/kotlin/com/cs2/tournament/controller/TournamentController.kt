@@ -15,6 +15,7 @@ class TournamentController(
     data class CreateTournamentRequest(val name: String, val startTime: java.time.LocalDateTime? = null, val pictureUrl: String? = null)
     data class AddTeamRequest(val globalTeamId: String)
     data class ReportWinRequest(val winnerId: String)
+    data class AddAdminRequest(val username: String)
 
     @GetMapping
     fun getAllTournaments(): ResponseEntity<List<TournamentService.TournamentResponse>> {
@@ -55,6 +56,26 @@ class TournamentController(
         return try {
             tournamentService.removeTeam(id, teamId, principal.name)
             ResponseEntity.ok().build()
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
+    @PostMapping("/{id}/admins")
+    fun addAdmin(@PathVariable id: String, @RequestBody request: AddAdminRequest, principal: Principal): ResponseEntity<TournamentService.TournamentResponse> {
+        return try {
+            val t = tournamentService.addAdmin(id, request.username, principal.name)
+            ResponseEntity.ok(t)
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().build()
+        }
+    }
+
+    @DeleteMapping("/{id}/admins/{username}")
+    fun removeAdmin(@PathVariable id: String, @PathVariable username: String, principal: Principal): ResponseEntity<TournamentService.TournamentResponse> {
+        return try {
+            val t = tournamentService.removeAdmin(id, username, principal.name)
+            ResponseEntity.ok(t)
         } catch (e: Exception) {
             ResponseEntity.badRequest().build()
         }

@@ -31,4 +31,5 @@ export interface TournamentState {
     maxRounds: number;
     startTime?: string;
     pictureUrl?: string;
+    adminUsernames: string[];
 }

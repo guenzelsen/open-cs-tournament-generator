@@ -14,6 +14,7 @@ export interface TournamentListResponse {
     pictureUrl?: string;
     teams: Team[];
     matches: Match[];
+    adminUsernames: string[];
 }
 
 @Injectable({
@@ -36,6 +37,7 @@ export class TournamentService {
     readonly currentRound = computed(() => this.activeTournamentDetails()?.currentRound || 0);
     readonly maxRounds = computed(() => this.activeTournamentDetails()?.maxRounds || 4);
     readonly status = computed(() => this.activeTournamentDetails()?.status || 'SETUP');
+    readonly adminUsernames = computed(() => this.activeTournamentDetails()?.adminUsernames || []);
     readonly standings = computed(() => {
         const t = this.activeTournamentDetails();
         if (!t) return [];
@@ -134,6 +136,27 @@ export class TournamentService {
         } catch (e) {
             console.error(e);
             throw new Error("Failed to advance round.");
+        }
+    }
+
+    // 4. Admin Management
+    async addAdmin(tournamentId: string, username: string) {
+        try {
+            await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/admins`, { username }));
+            await this.loadTournament(tournamentId);
+        } catch (e) {
+            console.error(e);
+            throw new Error("Failed to add admin.");
+        }
+    }
+
+    async removeAdmin(tournamentId: string, username: string) {
+        try {
+            await firstValueFrom(this.http.delete(`${this.apiUrl}/${tournamentId}/admins/${username}`));
+            await this.loadTournament(tournamentId);
+        } catch (e) {
+            console.error(e);
+            throw new Error("Failed to remove admin.");
         }
     }
 }

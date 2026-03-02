@@ -8,6 +8,7 @@ export interface LobbyResponse {
     team2Id: string;
     bannedMaps: string[];
     selectedMap: string | null;
+    lastBanTime: string | null;
 }
 
 @Injectable({
@@ -20,6 +21,7 @@ export class LobbyService {
     private activeLobbyState = signal<LobbyResponse | null>(null);
     readonly activeLobby = computed(() => this.activeLobbyState());
     readonly selectedMap = computed(() => this.activeLobbyState()?.selectedMap || null);
+    readonly lastBanTime = computed(() => this.activeLobbyState()?.lastBanTime || null);
 
     async loadLobby(matchId: string) {
         try {
@@ -38,6 +40,25 @@ export class LobbyService {
             console.error('Failed to ban map', e);
             if (e.status === 403) throw new Error("Not your turn to ban.");
             throw new Error("Failed to ban map.");
+        }
+    }
+
+    async autoBan(matchId: string) {
+        try {
+            const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/auto-ban`, {}));
+            this.activeLobbyState.set(data);
+        } catch (e: any) {
+            console.error('Failed to auto-ban map', e);
+        }
+    }
+
+    async restartLobby(matchId: string) {
+        try {
+            const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/restart`, {}));
+            this.activeLobbyState.set(data);
+        } catch (e: any) {
+            console.error('Failed to restart lobby', e);
+            throw new Error("Failed to restart lobby. Are you an admin?");
         }
     }
 
