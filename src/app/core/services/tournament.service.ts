@@ -129,6 +129,32 @@ export class TournamentService {
         }
     }
 
+    async proposeMatchResult(matchId: string, reportedWinnerId: string, reportedScore: string) {
+        const active = this.activeTournamentDetails();
+        if (!active) return;
+
+        try {
+            await firstValueFrom(this.http.post(`${this.apiUrl}/matches/${matchId}/propose-result`, { reportedWinnerId, reportedScore }));
+            await this.loadTournament(active.id);
+        } catch (e: any) {
+            console.error(e);
+            throw new Error(e.error?.message || "Failed to propose match result.");
+        }
+    }
+
+    async confirmMatchResult(matchId: string) {
+        const active = this.activeTournamentDetails();
+        if (!active) return;
+
+        try {
+            await firstValueFrom(this.http.post(`${this.apiUrl}/matches/${matchId}/confirm-result`, {}));
+            await this.loadTournament(active.id);
+        } catch (e: any) {
+            console.error(e);
+            throw new Error(e.error?.message || "Failed to confirm match result.");
+        }
+    }
+
     async advanceRound(tournamentId: string) {
         try {
             await firstValueFrom(this.http.post(`${this.apiUrl}/${tournamentId}/advance`, {}));

@@ -16,6 +16,8 @@ export interface Match {
     team1Score?: number;
     team2Score?: number;
     winnerId?: string;
+    reportedWinnerId?: string;
+    reportedScore?: string;
     privateMatchCode: string; // 6 character code
     round: number;
 }

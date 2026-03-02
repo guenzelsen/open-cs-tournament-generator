@@ -93,6 +93,8 @@ data class Match(
     var team1Score: Int? = null,
     var team2Score: Int? = null,
     var winnerId: String? = null,
+    var reportedWinnerId: String? = null,
+    var reportedScore: String? = null,
     val privateMatchCode: String,
     val round: Int,
 

@@ -43,15 +43,6 @@ export class LobbyService {
         }
     }
 
-    async autoBan(matchId: string) {
-        try {
-            const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/auto-ban`, {}));
-            this.activeLobbyState.set(data);
-        } catch (e: any) {
-            console.error('Failed to auto-ban map', e);
-        }
-    }
-
     async restartLobby(matchId: string) {
         try {
             const data = await firstValueFrom(this.http.post<LobbyResponse>(`${this.apiUrl}/${matchId}/restart`, {}));

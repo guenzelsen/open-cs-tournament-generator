@@ -154,6 +154,67 @@ class TournamentService(
     }
 
     @Transactional
+    fun proposeMatchResult(matchId: String, reportedWinnerId: String, reportedScore: String, requestorUsername: String) {
+        val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }
+        if (match.winnerId != null) throw IllegalStateException("Match already has a winner")
+
+        val t = match.tournament
+        
+        // Find the global team owned by the requestor
+        val requestorTeam = t.teams.find { tournamentTeam ->
+            val globalTeam = teamRepository.findById(tournamentTeam.globalTeamId).orElse(null)
+            globalTeam?.owner?.username == requestorUsername
+        }
+
+        if (requestorTeam == null) {
+            throw IllegalAccessException("You are not participating in this tournament")
+        }
+
+        if (requestorTeam.id != match.team1Id && requestorTeam.id != match.team2Id) {
+            throw IllegalAccessException("Your team is not in this match")
+        }
+
+        // Feature: Only the loser proposes the score
+        if (requestorTeam.id == reportedWinnerId) {
+            throw IllegalArgumentException("The losing team must report the score. You cannot report yourself as the winner.")
+        }
+
+        match.reportedWinnerId = reportedWinnerId
+        match.reportedScore = reportedScore
+
+        matchRepository.save(match)
+    }
+
+    @Transactional
+    fun confirmMatchResult(matchId: String, requestorUsername: String) {
+        val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }
+        if (match.winnerId != null) throw IllegalStateException("Match already has a winner")
+        
+        val reportedWinnerId = match.reportedWinnerId ?: throw IllegalStateException("No result has been proposed yet")
+
+        val t = match.tournament
+        
+        // Find the global team owned by the requestor
+        val requestorTeam = t.teams.find { tournamentTeam ->
+            val globalTeam = teamRepository.findById(tournamentTeam.globalTeamId).orElse(null)
+            globalTeam?.owner?.username == requestorUsername
+        }
+
+        if (requestorTeam == null || requestorTeam.id != reportedWinnerId) {
+            throw IllegalAccessException("Only the reported winning team can confirm the result")
+        }
+
+        match.winnerId = reportedWinnerId
+        
+        val loserId = if (match.team1Id == reportedWinnerId) match.team2Id else match.team1Id
+        t.teams.find { it.id == reportedWinnerId }?.let { it.wins++ }
+        t.teams.find { it.id == loserId }?.let { it.losses++ }
+        
+        matchRepository.save(match)
+        tournamentRepository.save(t)
+    }
+
+    @Transactional
     fun advanceRound(tournamentId: String, username: String) {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
         val isOrganizerOrAdmin = t.organizer.username == username || t.admins.any { it.username == username }

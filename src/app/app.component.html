@@ -382,14 +382,33 @@
 
                             <div class="flex items-center justify-between gap-4">
                                 <div class="flex-1 flex flex-col gap-2">
-                                    <button (click)="reportWin(match.id, match.team1Id)" [disabled]="!!match.winnerId"
-                                        class="w-full p-4 rounded-xl border text-left"
-                                        [ngClass]="match.winnerId === match.team1Id ? 'bg-cs2-orange/10 border-cs2-orange' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-orange')">
-                                        <span class="text-xl font-bold">{{getTeamName(match.team1Id)}}</span>
+                                    <button class="w-full p-4 rounded-xl border text-left"
+                                        [ngClass]="match.winnerId === match.team1Id || match.reportedWinnerId === match.team1Id ? 'bg-cs2-orange/10 border-cs2-orange' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-orange')">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xl font-bold">{{getTeamName(match.team1Id)}}</span>
+                                            <span *ngIf="match.reportedScore"
+                                                class="text-sm font-bold text-cs2-orange">{{match.reportedScore}}</span>
+                                        </div>
                                     </button>
+
+                                    <!-- Admin Force Win -->
                                     <button *ngIf="isOrganizerOrAdmin() && !match.winnerId"
                                         (click)="forceWin(match.id, match.team1Id)"
                                         class="text-xs bg-red-500/20 text-red-500 py-1 rounded hover:bg-red-500/40 font-bold uppercase w-full">Force
+                                        Win</button>
+
+                                    <!-- Participant: Propose Score (if not reported yet) -->
+                                    <button
+                                        *ngIf="!isOrganizerOrAdmin() && !match.winnerId && !match.reportedWinnerId && getTeamIdForCurrentUser() === match.team2Id"
+                                        (click)="proposeScore(match.id, match.team1Id)"
+                                        class="text-xs bg-cs2-orange/20 text-cs2-orange py-1 rounded hover:bg-cs2-orange/40 font-bold uppercase w-full">Report
+                                        Loss (They Won)</button>
+
+                                    <!-- Participant: Confirm Win (if proposed) -->
+                                    <button
+                                        *ngIf="!isOrganizerOrAdmin() && !match.winnerId && match.reportedWinnerId === match.team1Id && getTeamIdForCurrentUser() === match.team1Id"
+                                        (click)="confirmWin(match.id)"
+                                        class="text-xs bg-green-500/20 text-green-500 py-1 rounded hover:bg-green-500/40 font-bold uppercase w-full">Confirm
                                         Win</button>
                                 </div>
 
@@ -398,14 +417,33 @@
                                     VS</div>
 
                                 <div class="flex-1 flex flex-col gap-2">
-                                    <button (click)="reportWin(match.id, match.team2Id)" [disabled]="!!match.winnerId"
-                                        class="w-full p-4 rounded-xl border text-right"
-                                        [ngClass]="match.winnerId === match.team2Id ? 'bg-cs2-blue/10 border-cs2-blue' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-blue')">
-                                        <span class="text-xl font-bold">{{getTeamName(match.team2Id)}}</span>
+                                    <button class="w-full p-4 rounded-xl border text-right"
+                                        [ngClass]="match.winnerId === match.team2Id || match.reportedWinnerId === match.team2Id ? 'bg-cs2-blue/10 border-cs2-blue' : (match.winnerId ? 'opacity-50' : 'bg-cs2-dark hover:border-cs2-blue')">
+                                        <div class="flex justify-between items-center flex-row-reverse">
+                                            <span class="text-xl font-bold">{{getTeamName(match.team2Id)}}</span>
+                                            <span *ngIf="match.reportedScore"
+                                                class="text-sm font-bold text-cs2-blue">{{match.reportedScore}}</span>
+                                        </div>
                                     </button>
+
+                                    <!-- Admin Force Win -->
                                     <button *ngIf="isOrganizerOrAdmin() && !match.winnerId"
                                         (click)="forceWin(match.id, match.team2Id)"
                                         class="text-xs bg-red-500/20 text-red-500 py-1 rounded hover:bg-red-500/40 font-bold uppercase w-full">Force
+                                        Win</button>
+
+                                    <!-- Participant: Propose Score (if not reported yet) -->
+                                    <button
+                                        *ngIf="!isOrganizerOrAdmin() && !match.winnerId && !match.reportedWinnerId && getTeamIdForCurrentUser() === match.team1Id"
+                                        (click)="proposeScore(match.id, match.team2Id)"
+                                        class="text-xs bg-cs2-blue/20 text-cs2-blue py-1 rounded hover:bg-cs2-blue/40 font-bold uppercase w-full">Report
+                                        Loss (They Won)</button>
+
+                                    <!-- Participant: Confirm Win (if proposed) -->
+                                    <button
+                                        *ngIf="!isOrganizerOrAdmin() && !match.winnerId && match.reportedWinnerId === match.team2Id && getTeamIdForCurrentUser() === match.team2Id"
+                                        (click)="confirmWin(match.id)"
+                                        class="text-xs bg-green-500/20 text-green-500 py-1 rounded hover:bg-green-500/40 font-bold uppercase w-full">Confirm
                                         Win</button>
                                 </div>
                             </div>
