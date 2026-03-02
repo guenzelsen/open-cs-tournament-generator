@@ -153,6 +153,18 @@ class TournamentService(
         tournamentRepository.save(t)
     }
 
+    /**
+     * Allows the losing team of a match to propose the final score and declare the winning team.
+     * Validates that the requestor is part of the match and is proposing the opponent as the winner.
+     * 
+     * @param matchId The unique identifier of the match.
+     * @param reportedWinnerId The unique identifier of the tournament team winning the match.
+     * @param reportedScore The proposed score (e.g. 13-10).
+     * @param requestorUsername The username of the user making the proposal.
+     * @throws IllegalArgumentException If the match is not found or the request is logically invalid.
+     * @throws IllegalStateException If the match already has a confirmed winner.
+     * @throws IllegalAccessException If the user is unassociated with the match.
+     */
     @Transactional
     fun proposeMatchResult(matchId: String, reportedWinnerId: String, reportedScore: String, requestorUsername: String) {
         val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }
@@ -185,6 +197,16 @@ class TournamentService(
         matchRepository.save(match)
     }
 
+    /**
+     * Allows the proposed winning team to confirm the result proposed by the losing team.
+     * Confirms the match result, advances scores, and updates the tournament standings points.
+     * 
+     * @param matchId The unique identifier of the match.
+     * @param requestorUsername The username of the winning team player confirming the loss.
+     * @throws IllegalArgumentException If the match is not found.
+     * @throws IllegalStateException If the match already has a winner or no result was proposed.
+     * @throws IllegalAccessException If the user confirming is not the declared match winner.
+     */
     @Transactional
     fun confirmMatchResult(matchId: String, requestorUsername: String) {
         val match = matchRepository.findById(matchId).orElseThrow { IllegalArgumentException("Match not found") }

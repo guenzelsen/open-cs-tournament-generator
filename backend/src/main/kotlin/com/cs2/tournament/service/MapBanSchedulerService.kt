@@ -21,6 +21,12 @@ class MapBanSchedulerService(
         "de_anubis"
     )
 
+    /**
+     * Periodically checks all active match lobbies for expired map ban turns.
+     * If a lobby has gone more than 60 seconds without banning a map, this
+     * method automatically bans a random available map for the team, advancing
+     * the vote forward, or finalizing the map selection if only one remains.
+     */
     @Scheduled(fixedRate = 5000)
     @Transactional
     fun processAutoBans() {
