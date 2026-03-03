@@ -12,13 +12,13 @@ class MapBanSchedulerService(
     private val lobbyRepository: MatchLobbyRepository
 ) {
     private val cs2Maps = listOf(
-        "de_dust2",
-        "de_mirage",
-        "de_inferno",
-        "de_nuke",
-        "de_vertigo",
-        "de_ancient",
-        "de_anubis"
+        "Ancient",
+        "Dust II",
+        "Inferno",
+        "Mirage",
+        "Nuke",
+        "Overpass",
+        "Anubis"
     )
 
     /**
