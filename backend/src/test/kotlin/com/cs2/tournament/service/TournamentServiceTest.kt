@@ -319,7 +319,62 @@ class TournamentServiceTest {
         service.reportMatchResult("m1", "tt1", "organizer")
 
         // After reporting, Buchholz for tt1 = wins of tt2 = 0, Buchholz for tt2 = wins of tt1 = 3 (2+1)
+        // After reporting, Buchholz for tt1 = wins of tt2 = 0, Buchholz for tt2 = wins of tt1 = 3 (2+1)
         assertEquals(0, t1.buchholzScore, "Team A's Buchholz should equal Team B's wins (0)")
         assertEquals(3, t2.buchholzScore, "Team B's Buchholz should equal Team A's wins (3 after win increment)")
+    }
+
+    @Test
+    fun `should advance to Quarter Finals when teams greater than 6`() {
+        val user = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user, currentRound = 4, maxRounds = 4, status = TournamentStatus.ACTIVE)
+        
+        // 8 teams
+        for (i in 1..8) {
+            tournament.teams.add(TournamentTeam(id = "tt$i", tournament = tournament, name = "Team $i", globalTeamId = "gt$i", wins = i))
+        }
+
+        // Dummy matches so all have winners
+        for (i in 1..4) {
+            tournament.matches.add(Match(id = "m$i", tournament = tournament, team1Id = "tt$i", team2Id = "tt${i+4}", round = 4, privateMatchCode = "AAAAAA", winnerId = "tt$i"))
+        }
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+
+        service.advanceRound("t1", "organizer")
+
+        assertEquals(TournamentStatus.QUARTER_FINALS, tournament.status)
+        assertEquals(5, tournament.currentRound) // Round incremented for QF
+        
+        // Should have 4 QF matches
+        val qfMatches = tournament.matches.filter { it.round == 5 }
+        assertEquals(4, qfMatches.size)
+    }
+
+    @Test
+    fun `should advance to Semi Finals from Quarter Finals`() {
+        val user = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user, currentRound = 5, status = TournamentStatus.QUARTER_FINALS)
+        
+        // 8 teams
+        for (i in 1..8) {
+            tournament.teams.add(TournamentTeam(id = "tt$i", tournament = tournament, name = "Team $i", globalTeamId = "gt$i", wins = i))
+        }
+
+        // QF matches with winners
+        for (i in 1..4) {
+            tournament.matches.add(Match(id = "m$i", tournament = tournament, team1Id = "tt$i", team2Id = "tt${i+4}", round = 5, privateMatchCode = "AAAAAA", winnerId = "tt$i"))
+        }
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+
+        service.advanceRound("t1", "organizer")
+
+        assertEquals(TournamentStatus.SEMI_FINALS, tournament.status)
+        assertEquals(6, tournament.currentRound) 
+        
+        // Should have 2 SF matches
+        val sfMatches = tournament.matches.filter { it.round == 6 }
+        assertEquals(2, sfMatches.size)
     }
 }
