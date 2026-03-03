@@ -281,9 +281,30 @@ class TournamentService(
             throw IllegalStateException("All matches must have a result before advancing.")
         }
 
-        if (t.currentRound >= t.maxRounds) {
+        if (t.currentRound >= t.maxRounds && t.status == TournamentStatus.ACTIVE) {
+            // Swiss rounds are over. Transition to Playoffs if enough teams exist.
+            if (t.teams.size > 6) {
+                t.status = TournamentStatus.QUARTER_FINALS
+                generatePlayoffs(t, 8)
+            } else if (t.teams.size in 4..6) {
+                t.status = TournamentStatus.SEMI_FINALS
+                generatePlayoffs(t, 4)
+            } else if (t.teams.size in 2..3) {
+                t.status = TournamentStatus.FINALS
+                generatePlayoffs(t, 2)
+            } else {
+                t.status = TournamentStatus.FINISHED
+            }
+        } else if (t.status == TournamentStatus.QUARTER_FINALS) {
+            t.status = TournamentStatus.SEMI_FINALS
+            generatePlayoffsFromPrevious(t, TournamentStatus.QUARTER_FINALS)
+        } else if (t.status == TournamentStatus.SEMI_FINALS) {
+            t.status = TournamentStatus.FINALS
+            generatePlayoffsFromPrevious(t, TournamentStatus.SEMI_FINALS)
+        } else if (t.status == TournamentStatus.FINALS) {
             t.status = TournamentStatus.FINISHED
         } else {
+            // Still in ACTIVE (Swiss)
             t.currentRound++
             generatePairings(t)
         }
@@ -387,5 +408,109 @@ class TournamentService(
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         val random = java.security.SecureRandom()
         return (1..6).map { chars[random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    /**
+     * Generates the initial playoff bracket based on Swiss standings.
+     * Seeds: 1 vs 8, 2 vs 7, 3 vs 6, 4 vs 5 (for an 8-team bracket).
+     * If there are fewer teams than the bracket size, the top seeds get a bye.
+     */
+    private fun generatePlayoffs(t: Tournament, bracketSize: Int) {
+        t.currentRound++ // Increment round for the playoff phase
+        
+        val standings = t.teams.sortedWith(
+            compareByDescending<TournamentTeam> { it.wins }
+                .thenBy { it.losses }
+                .thenByDescending { it.buchholzScore }
+        )
+
+        // Take top N teams
+        val playoffTeams = standings.take(bracketSize).toMutableList()
+
+        // If we don't have enough teams, we pad with nulls to represent BYEs
+        val seeds = MutableList<TournamentTeam?>(bracketSize) { null }
+        for (i in playoffTeams.indices) {
+            seeds[i] = playoffTeams[i]
+        }
+
+        // Standard seeding for Single Elimination
+        // For 8: 1v8, 4v5, 2v7, 3v6 is conventional, but for simplicity we will pair:
+        // top half vs bottom half reversed: 1 vs N, 2 vs N-1, etc.
+        val matchesToPlay = bracketSize / 2
+        for (i in 0 until matchesToPlay) {
+            val highSeed = seeds[i]
+            val lowSeed = seeds[bracketSize - 1 - i]
+
+            if (highSeed != null) {
+                // Determine if this is a bye match (lowSeed is null)
+                val match = Match(
+                    tournament = t,
+                    team1Id = highSeed.id,
+                    team2Id = lowSeed?.id ?: highSeed.id, // If bye, just set both to highSeed to easily track or we can set team2Id to a dummy, but let's handle byes
+                    round = t.currentRound,
+                    privateMatchCode = generateMatchCode(),
+                    winnerId = if (lowSeed == null) highSeed.id else null // Auto-win if BYE
+                )
+                
+                // If it's not a bye, give it a lobby
+                if (lowSeed != null) {
+                    val lobby = MatchLobby(match = match)
+                    match.lobby = lobby
+                }
+
+                t.matches.add(match)
+            }
+        }
+    }
+
+    /**
+     * Generates the next round of playoffs from the previous phase's winners.
+     */
+    private fun generatePlayoffsFromPrevious(t: Tournament, previousPhase: TournamentStatus) {
+        val previousRound = t.currentRound
+        t.currentRound++
+
+        // Get the winners from the previous round
+        // Note: this assumes we are strictly flowing from QF -> SF -> F
+        // so the 'previousRound' matches are the ones we just finished.
+        val previousMatches = t.matches.filter { it.round == previousRound }
+        
+        // Ensure all have winners (should be true due to advanceRound check)
+        val winners = previousMatches.mapNotNull { match ->
+            t.teams.find { it.id == match.winnerId }
+        }
+
+        // Pair them up 1v2, 3v4
+        for (i in 0 until winners.size step 2) {
+            if (i + 1 < winners.size) {
+                val team1 = winners[i]
+                val team2 = winners[i + 1]
+                
+                val match = Match(
+                    tournament = t,
+                    team1Id = team1.id,
+                    team2Id = team2.id,
+                    round = t.currentRound,
+                    privateMatchCode = generateMatchCode()
+                )
+                val lobby = MatchLobby(match = match)
+                match.lobby = lobby
+                
+                t.matches.add(match)
+            } else {
+                // Odd number of winners? Shouldn't happen in a fixed bracket unless byes were weird,
+                // but if so, advance them via a bye.
+                val team = winners[i]
+                val match = Match(
+                    tournament = t,
+                    team1Id = team.id,
+                    team2Id = team.id,
+                    round = t.currentRound,
+                    privateMatchCode = generateMatchCode(),
+                    winnerId = team.id
+                )
+                t.matches.add(match)
+            }
+        }
     }
 }

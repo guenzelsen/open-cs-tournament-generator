@@ -129,5 +129,5 @@ data class MatchLobby(
 )
 
 enum class TournamentStatus {
-    SETUP, ACTIVE, FINISHED
+    SETUP, ACTIVE, QUARTER_FINALS, SEMI_FINALS, FINALS, FINISHED
 }
