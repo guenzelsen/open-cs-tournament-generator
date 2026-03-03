@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface LobbyResponse {
     matchId: string;
@@ -16,7 +17,7 @@ export interface LobbyResponse {
 })
 export class LobbyService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/lobbies';
+    private apiUrl = `${environment.apiUrl}/api/lobbies`;
 
     private activeLobbyState = signal<LobbyResponse | null>(null);
     readonly activeLobby = computed(() => this.activeLobbyState());

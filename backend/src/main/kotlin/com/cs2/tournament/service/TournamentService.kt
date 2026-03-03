@@ -93,14 +93,32 @@ class TournamentService(
         return toResponse(tournamentRepository.save(t))
     }
 
+    /**
+     * Adds a team to a tournament during the SETUP phase.
+     * Organizers and admins can add any team. Normal users can only add their own team.
+     *
+     * @param tournamentId The tournament to add the team to.
+     * @param globalTeamId The global team ID to register.
+     * @param username The requesting user's username.
+     * @return The created tournament team entry.
+     * @throws IllegalAccessException If the user lacks permission to add this team.
+     * @throws IllegalStateException If the tournament is not in SETUP phase.
+     * @throws IllegalArgumentException If the team is already registered or not found.
+     */
     @Transactional
     fun addTeam(tournamentId: String, globalTeamId: String, username: String): TournamentTeam {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
-        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can add teams")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
         if (t.teams.any { it.globalTeamId == globalTeamId }) throw IllegalArgumentException("Team already added to this tournament")
 
         val globalTeam = teamRepository.findById(globalTeamId).orElseThrow { IllegalArgumentException("Global team not found") }
+
+        // Permission: organizer and admins can add any team; normal users can only add their own
+        val isOrganizerOrAdmin = t.organizer.username == username || t.admins.any { it.username == username }
+        if (!isOrganizerOrAdmin && globalTeam.owner.username != username) {
+            throw IllegalAccessException("You can only add your own team, or you must be an organizer/admin")
+        }
+
         val isTeamComplete = globalTeam.players.size >= 5
 
         val newTeam = TournamentTeam(name = globalTeam.name, globalTeamId = globalTeam.id, tournament = t, isComplete = isTeamComplete)
@@ -109,10 +127,21 @@ class TournamentService(
         return newTeam
     }
 
+    /**
+     * Removes a team from a tournament during the SETUP phase.
+     * Only the organizer or tournament admins can remove teams.
+     *
+     * @param tournamentId The tournament to remove the team from.
+     * @param teamId The tournament team ID to remove.
+     * @param username The requesting user's username.
+     * @throws IllegalAccessException If the user is not the organizer or an admin.
+     * @throws IllegalStateException If the tournament is not in SETUP phase.
+     */
     @Transactional
     fun removeTeam(tournamentId: String, teamId: String, username: String) {
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
-        if (t.organizer.username != username) throw IllegalAccessException("Only organizer can remove teams")
+        val isOrganizerOrAdmin = t.organizer.username == username || t.admins.any { it.username == username }
+        if (!isOrganizerOrAdmin) throw IllegalAccessException("Only organizer or admins can remove teams")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
 
         t.teams.removeIf { it.id == teamId }

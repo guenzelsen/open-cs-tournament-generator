@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient, HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface AuthResponse {
     token: string;
@@ -24,7 +25,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 })
 export class AuthService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/auth';
+    private apiUrl = `${environment.apiUrl}/api/auth`;
 
     private state = signal<{ token: string | null, username: string | null, userId: string | null, pictureUrl: string | null }>({
         token: localStorage.getItem('jwt_token'),
@@ -41,7 +42,7 @@ export class AuthService {
     async fetchUserProfile() {
         if (!this.isLoggedIn()) return;
         try {
-            const res = await firstValueFrom(this.http.get<{ username: string, pictureUrl: string | null }>('http://localhost:8080/api/users/me'));
+            const res = await firstValueFrom(this.http.get<{ username: string, pictureUrl: string | null }>(`${environment.apiUrl}/api/users/me`));
             localStorage.setItem('picture_url', res.pictureUrl || '');
             this.state.update(s => ({ ...s, pictureUrl: res.pictureUrl }));
         } catch (e) {
@@ -51,7 +52,7 @@ export class AuthService {
 
     async updateProfilePicture(pictureUrl: string) {
         try {
-            const res = await firstValueFrom(this.http.put<{ username: string, pictureUrl: string | null }>('http://localhost:8080/api/users/me', { pictureUrl }));
+            const res = await firstValueFrom(this.http.put<{ username: string, pictureUrl: string | null }>(`${environment.apiUrl}/api/users/me`, { pictureUrl }));
             localStorage.setItem('picture_url', res.pictureUrl || '');
             this.state.update(s => ({ ...s, pictureUrl: res.pictureUrl }));
         } catch (e) {

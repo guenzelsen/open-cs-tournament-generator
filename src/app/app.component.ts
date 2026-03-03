@@ -6,6 +6,7 @@ import { AuthService } from './core/services/auth.service';
 import { LobbyService } from './core/services/lobby.service';
 import { TeamService } from './core/services/team.service';
 import { UploadService } from './core/services/upload.service';
+import { environment } from '../environments/environment';
 
 @Component({
     selector: 'app-root',
@@ -42,7 +43,7 @@ export class AppComponent {
 
     // Team States
     newGlobalTeamName = signal('');
-    newPlayerUsername = signal('');
+    playerInputs = signal<Record<string, string>>({});
     teamSearchTerm = signal('');
 
     // Service Signals Exposed
@@ -133,7 +134,7 @@ export class AppComponent {
     }
 
     loginWithSteam() {
-        window.location.href = 'http://localhost:8080/api/auth/steam';
+        window.location.href = environment.steamLoginUrl;
     }
 
     setTab(tab: 'TOURNAMENTS' | 'TEAMS') {
@@ -174,7 +175,7 @@ export class AppComponent {
         this.authPassword.set('');
         this.newTournamentName.set('');
         this.newGlobalTeamName.set('');
-        this.newPlayerUsername.set('');
+        this.playerInputs.set({});
         this.teamSearchTerm.set('');
         this.loginError.set('');
     }
@@ -248,10 +249,19 @@ export class AppComponent {
         }
     }
 
+    getPlayerInput(teamId: string): string {
+        return this.playerInputs()[teamId] || '';
+    }
+
+    setPlayerInput(teamId: string, value: string) {
+        this.playerInputs.update(inputs => ({ ...inputs, [teamId]: value }));
+    }
+
     async addPlayer(teamId: string) {
-        if (this.newPlayerUsername().trim()) {
-            await this.teamService.addPlayer(teamId, this.newPlayerUsername());
-            this.newPlayerUsername.set('');
+        const username = this.getPlayerInput(teamId).trim();
+        if (username) {
+            await this.teamService.addPlayer(teamId, username);
+            this.playerInputs.update(inputs => ({ ...inputs, [teamId]: '' }));
         }
     }
 

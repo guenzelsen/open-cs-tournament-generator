@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -31,11 +32,11 @@ describe('AuthService', () => {
     it('should perform login and save token', async () => {
         const p = service.login('admin', 'password');
 
-        const req = httpTestingController.expectOne('http://localhost:8080/api/auth/login');
+        const req = httpTestingController.expectOne(`${environment.apiUrl}/api/auth/login`);
         expect(req.request.method).toBe('POST');
         req.flush({ token: 'mock-jwt-token', userId: '1', username: 'admin' });
 
-        const profileReq = httpTestingController.expectOne('http://localhost:8080/api/users/me');
+        const profileReq = httpTestingController.expectOne(`${environment.apiUrl}/api/users/me`);
         expect(profileReq.request.method).toBe('GET');
         profileReq.flush({ username: 'admin', pictureUrl: null });
 

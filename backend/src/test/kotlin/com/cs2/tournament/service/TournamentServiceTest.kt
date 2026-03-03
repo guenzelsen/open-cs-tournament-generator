@@ -194,6 +194,67 @@ class TournamentServiceTest {
     }
 
     @Test
+    fun `should allow admin to add team to tournament`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val admin = User(id = "user2", username = "adminUser", passwordHash = "hash")
+        val teamOwner = User(id = "user3", username = "teamOwner", passwordHash = "hash")
+        val globalTeam = com.cs2.tournament.model.Team(id = "gt1", name = "Navi", owner = teamOwner, players = mutableSetOf(teamOwner))
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer, admins = mutableSetOf(admin))
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+        `when`(teamRepository.findById("gt1")).thenReturn(Optional.of(globalTeam))
+
+        val result = service.addTeam("t1", "gt1", "adminUser")
+        assertEquals("Navi", result.name)
+    }
+
+    @Test
+    fun `should allow normal user to add their own team to tournament`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val teamOwner = User(id = "user2", username = "teamOwner", passwordHash = "hash")
+        val globalTeam = com.cs2.tournament.model.Team(id = "gt1", name = "MyTeam", owner = teamOwner, players = mutableSetOf(teamOwner))
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer)
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+        `when`(teamRepository.findById("gt1")).thenReturn(Optional.of(globalTeam))
+
+        val result = service.addTeam("t1", "gt1", "teamOwner")
+        assertEquals("MyTeam", result.name)
+    }
+
+    @Test
+    fun `should reject non-owner non-admin from adding team to tournament`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val teamOwner = User(id = "user2", username = "teamOwner", passwordHash = "hash")
+        val randomUser = User(id = "user3", username = "randomUser", passwordHash = "hash")
+        val globalTeam = com.cs2.tournament.model.Team(id = "gt1", name = "NotMyTeam", owner = teamOwner, players = mutableSetOf(teamOwner))
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer)
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+        `when`(teamRepository.findById("gt1")).thenReturn(Optional.of(globalTeam))
+
+        val exception = assertThrows(IllegalAccessException::class.java) {
+            service.addTeam("t1", "gt1", "randomUser")
+        }
+        assertTrue(exception.message!!.contains("only add your own team"))
+    }
+
+    @Test
+    fun `should allow admin to remove team from tournament`() {
+        val organizer = User(id = "user1", username = "organizer", passwordHash = "hash")
+        val admin = User(id = "user2", username = "adminUser", passwordHash = "hash")
+        val tournament = Tournament(id = "t1", name = "Test Cup", organizer = organizer, admins = mutableSetOf(admin))
+        tournament.teams = mutableListOf(
+            TournamentTeam(id = "tt1", name = "Navi", globalTeamId = "gt1", tournament = tournament, isComplete = true)
+        )
+
+        `when`(tournamentRepository.findById("t1")).thenReturn(Optional.of(tournament))
+
+        service.removeTeam("t1", "tt1", "adminUser")
+        assertTrue(tournament.teams.isEmpty())
+    }
+
+    @Test
     fun `should rotate BYE among teams across rounds`() {
         val user = User(id = "user1", username = "organizer", passwordHash = "hash")
         val tournament = Tournament(id = "t1", name = "Test Cup", organizer = user, currentRound = 1)

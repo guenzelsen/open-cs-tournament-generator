@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Team, Match, TournamentState } from '../models/tournament.model';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface TournamentListResponse {
     id: string;
@@ -22,7 +23,7 @@ export interface TournamentListResponse {
 })
 export class TournamentService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/tournaments';
+    private apiUrl = `${environment.apiUrl}/api/tournaments`;
 
     private tournamentsList = signal<TournamentListResponse[]>([]);
     readonly allTournaments = computed(() => this.tournamentsList());
@@ -43,7 +44,8 @@ export class TournamentService {
         if (!t) return [];
         return [...t.teams].sort((a, b) => {
             if (a.wins !== b.wins) return b.wins - a.wins;
-            return a.losses - b.losses;
+            if (a.losses !== b.losses) return a.losses - b.losses;
+            return b.buchholzScore - a.buchholzScore;
         });
     });
 

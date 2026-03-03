@@ -79,6 +79,7 @@ class TeamService(
         if (t.owner.username != ownerUsername) throw IllegalAccessException("Only owner can add players")
         
         val player = userRepository.findByUsername(playerUsername).orElseThrow { IllegalArgumentException("Player user not found") }
+        if (t.players.any { it.id == player.id }) throw IllegalArgumentException("Player is already on this team")
         t.players.add(player)
         return toResponse(teamRepository.save(t))
     }
