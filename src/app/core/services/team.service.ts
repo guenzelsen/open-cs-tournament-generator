@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface GlobalTeam {
     id: string;
@@ -15,7 +16,7 @@ export interface GlobalTeam {
 })
 export class TeamService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/teams';
+    private apiUrl = `${environment.apiUrl}/api/teams`;
 
     myTeams = signal<GlobalTeam[]>([]);
     searchedTeams = signal<GlobalTeam[]>([]);

@@ -117,7 +117,7 @@
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-2xl font-bold flex items-center gap-3">
                     <span class="w-2 h-8 bg-cs2-blue rounded-full"></span>
-                    Your Tournaments
+                    All Tournaments
                 </h2>
 
                 <div class="flex gap-2">
@@ -204,7 +204,7 @@
                                 class="w-10 h-10 rounded-lg object-cover" />
                             <h3 class="text-xl font-bold text-white">{{team.name}}</h3>
                         </div>
-                        <span class="text-cs2-muted text-sm">Players: {{team.playerUsernames.length}}/6</span>
+                        <span class="text-cs2-muted text-sm">Players: {{team.playerUsernames.length}}/5</span>
                     </div>
 
                     <div class="space-y-2 mb-6 min-h-[140px]">
@@ -217,8 +217,8 @@
                     </div>
 
                     <div class="flex gap-2" *ngIf="team.ownerUsername === currentUser()">
-                        <input type="text" [ngModel]="newPlayerUsername()"
-                            (ngModelChange)="newPlayerUsername.set($event)" placeholder="Add player by username..."
+                        <input type="text" [ngModel]="getPlayerInput(team.id)"
+                            (ngModelChange)="setPlayerInput(team.id, $event)" placeholder="Add player by username..."
                             class="flex-1 bg-cs2-dark/80 border border-cs2-muted/20 rounded px-3 py-2 text-sm text-white focus:border-cs2-blue outline-none">
                         <button (click)="addPlayer(team.id)"
                             class="bg-cs2-dark hover:bg-cs2-blue text-white px-3 py-2 rounded text-sm font-bold border border-cs2-muted/20 hover:border-cs2-blue transition-all">
@@ -278,7 +278,7 @@
                         </div>
                     </div>
 
-                    <button (click)="startTournament()" [disabled]="teams().length < 2"
+                    <button *ngIf="isOrganizerOrAdmin()" (click)="startTournament()" [disabled]="teams().length < 2"
                         class="w-full bg-gradient-to-r from-cs2-blue to-blue-600 text-white py-4 rounded-xl font-black uppercase shadow-lg disabled:opacity-50 mt-4">
                         Start Tournament
                     </button>
@@ -319,8 +319,9 @@
                                 <span *ngIf="team?.isComplete === false"
                                     class="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded font-bold tracking-widest uppercase">Incomplete</span>
                             </div>
-                            <button (click)="removeTeam(team.id)" class="text-cs2-muted hover:text-red-500"><svg
-                                    class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button *ngIf="isOrganizerOrAdmin()" (click)="removeTeam(team.id)"
+                                class="text-cs2-muted hover:text-red-500"><svg class="w-5 h-5" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-width="2"
                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
                                     </path>
@@ -359,7 +360,7 @@
                                     {{currentRound()}}</span><span *ngIf="status() === 'FINISHED'"
                                     class="text-cs2-orange">TOURNAMENT COMPLETE</span></h2>
                         </div>
-                        <button *ngIf="status() === 'ACTIVE'" (click)="advanceRound()"
+                        <button *ngIf="isOrganizerOrAdmin() && status() === 'ACTIVE'" (click)="advanceRound()"
                             [disabled]="hasUnfinishedMatches()"
                             class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-lg font-bold flex gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                             Advance Round <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
