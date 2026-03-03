@@ -98,6 +98,7 @@ class TournamentService(
         val t = tournamentRepository.findById(tournamentId).orElseThrow { IllegalArgumentException("Not found") }
         if (t.organizer.username != username) throw IllegalAccessException("Only organizer can add teams")
         if (t.status != TournamentStatus.SETUP) throw IllegalStateException("Not in SETUP phase")
+        if (t.teams.any { it.globalTeamId == globalTeamId }) throw IllegalArgumentException("Team already added to this tournament")
 
         val globalTeam = teamRepository.findById(globalTeamId).orElseThrow { IllegalArgumentException("Global team not found") }
         val isTeamComplete = globalTeam.players.size >= 5
@@ -148,6 +149,8 @@ class TournamentService(
 
         t.teams.find { it.id == winnerId }?.let { it.wins++ }
         t.teams.find { it.id == loserId }?.let { it.losses++ }
+
+        calculateBuchholz(t)
         
         matchRepository.save(match)
         tournamentRepository.save(t)
@@ -231,6 +234,8 @@ class TournamentService(
         val loserId = if (match.team1Id == reportedWinnerId) match.team2Id else match.team1Id
         t.teams.find { it.id == reportedWinnerId }?.let { it.wins++ }
         t.teams.find { it.id == loserId }?.let { it.losses++ }
+
+        calculateBuchholz(t)
         
         matchRepository.save(match)
         tournamentRepository.save(t)
@@ -256,24 +261,60 @@ class TournamentService(
         tournamentRepository.save(t)
     }
 
+    /**
+     * Calculates the Buchholz score for all teams in a tournament.
+     * Buchholz score = sum of wins of all opponents a team has faced.
+     * Used as a tiebreaker in Swiss-system tournament standings.
+     *
+     * @param t The tournament to calculate Buchholz scores for.
+     */
+    private fun calculateBuchholz(t: Tournament) {
+        val completedMatches = t.matches.filter { it.winnerId != null }
+        for (team in t.teams) {
+            val opponentIds = completedMatches
+                .filter { it.team1Id == team.id || it.team2Id == team.id }
+                .map { if (it.team1Id == team.id) it.team2Id else it.team1Id }
+            team.buchholzScore = opponentIds.sumOf { oppId ->
+                t.teams.find { it.id == oppId }?.wins ?: 0
+            }
+        }
+    }
+
+    /**
+     * Generates Swiss-system pairings for the current round.
+     * Teams are sorted by standings (wins desc, losses asc, Buchholz desc) and
+     * paired with the closest-ranked opponent they haven't played yet.
+     * Handles odd numbers of teams via a BYE that rotates across rounds.
+     *
+     * @param t The tournament to generate pairings for.
+     */
     private fun generatePairings(t: Tournament) {
         val standings = t.teams.sortedWith(
-            compareByDescending<TournamentTeam> { it.wins }.thenBy { it.losses }
+            compareByDescending<TournamentTeam> { it.wins }
+                .thenBy { it.losses }
+                .thenByDescending { it.buchholzScore }
         ).toMutableList()
 
         val newMatches = mutableListOf<Match>()
         val pastMatches = t.matches
 
-        // Handle odd number of teams by giving a BYE to the team with the lowest score that hasn't had a BYE yet.
-        // For simplicity, we just give the last team in the standings a BYE.
+        // Handle odd number of teams: give BYE to the lowest-ranked team that hasn't had one yet.
+        // If all teams have had a BYE, reset the tracker and start over.
         if (standings.size % 2 != 0) {
-            val byeTeam = standings.removeLast()
+            if (t.byeTeamIds.size >= standings.size) {
+                t.byeTeamIds.clear()
+            }
+            val byeTeam = standings.lastOrNull { it.id !in t.byeTeamIds }
+                ?: standings.last()
+            standings.remove(byeTeam)
             byeTeam.wins++
+            t.byeTeamIds.add(byeTeam.id)
         }
 
         while (standings.size >= 2) {
             val team1 = standings.removeAt(0)
             var opponentIndex = 0
+            var foundUnplayed = false
             for (i in standings.indices) {
                 val team2 = standings[i]
                 val hasPlayed = pastMatches.any {
@@ -282,8 +323,14 @@ class TournamentService(
                 }
                 if (!hasPlayed) {
                     opponentIndex = i
+                    foundUnplayed = true
                     break
                 }
+            }
+
+            if (!foundUnplayed) {
+                // All remaining opponents have been played; pair with closest-ranked (index 0) as fallback
+                opponentIndex = 0
             }
 
             val team2 = standings.removeAt(opponentIndex)
@@ -303,9 +350,13 @@ class TournamentService(
         t.matches.addAll(newMatches)
     }
 
+    /**
+     * Generates a random 6-character alphanumeric match code using a secure random generator.
+     * @return A 6-character uppercase alphanumeric string.
+     */
     private fun generateMatchCode(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        val random = java.util.Random()
+        val random = java.security.SecureRandom()
         return (1..6).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 }

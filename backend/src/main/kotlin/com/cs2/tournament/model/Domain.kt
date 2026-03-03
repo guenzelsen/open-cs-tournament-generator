@@ -41,7 +41,12 @@ data class Tournament(
         joinColumns = [JoinColumn(name = "tournament_id")],
         inverseJoinColumns = [JoinColumn(name = "user_id")]
     )
-    var admins: MutableSet<User> = mutableSetOf()
+    var admins: MutableSet<User> = mutableSetOf(),
+
+    @ElementCollection
+    @CollectionTable(name = "tournament_bye_teams", joinColumns = [JoinColumn(name = "tournament_id")])
+    @Column(name = "team_id")
+    var byeTeamIds: MutableList<String> = mutableListOf()
 )
 
 @Entity

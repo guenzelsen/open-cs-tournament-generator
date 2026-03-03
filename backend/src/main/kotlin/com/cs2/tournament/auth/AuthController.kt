@@ -50,6 +50,9 @@ class AuthController(
 
     @GetMapping("/me")
     fun me(@RequestHeader("Authorization") authHeader: String): ResponseEntity<Any> {
+        if (!authHeader.startsWith("Bearer ") || authHeader.length < 8) {
+            return ResponseEntity.status(401).build()
+        }
         val token = authHeader.substring(7)
         if (jwtUtils.validateToken(token)) {
             val username = jwtUtils.extractUsername(token)

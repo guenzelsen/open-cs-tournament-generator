@@ -34,11 +34,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.web.filter.OncePerRequestFilter
 import java.util.Date
 import javax.crypto.SecretKey
+import org.springframework.beans.factory.annotation.Value
 
 @Component
-class JwtUtils {
-    // Standard secret. For production, load from env var.
-    private val SECRET_KEY: SecretKey = Keys.hmacShaKeyFor("my-32-character-ultra-secure-and-ultra-long-secret".toByteArray())
+class JwtUtils(
+    @Value("\${app.jwt.secret:my-32-character-ultra-secure-and-ultra-long-secret}")
+    private val secretKeyString: String
+) {
+    private val SECRET_KEY: SecretKey by lazy {
+        Keys.hmacShaKeyFor(secretKeyString.toByteArray())
+    }
 
     fun generateToken(username: String, userId: String): String {
         return Jwts.builder()
