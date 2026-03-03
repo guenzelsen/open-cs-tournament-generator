@@ -35,9 +35,9 @@ class MapBanSchedulerServiceTest {
 
         verify(lobbyRepository, times(1)).save(lobby)
         assertEquals(1, lobby.bannedMaps.size)
-        // Verify the auto-banned map uses display names (Bug #1 fix)
-        val expectedMaps = listOf("Ancient", "Dust II", "Inferno", "Mirage", "Nuke", "Overpass", "Anubis")
-        assertTrue(expectedMaps.contains(lobby.bannedMaps[0]), "Auto-banned map should use display names, got: ${lobby.bannedMaps[0]}")
+        // Verify the auto-banned map uses de_ names (Bug #1 fix)
+        val expectedMaps = listOf("de_ancient", "de_dust2", "de_inferno", "de_mirage", "de_nuke", "de_overpass", "de_anubis")
+        assertTrue(expectedMaps.contains(lobby.bannedMaps[0]), "Auto-banned map should use de_ names, got: ${lobby.bannedMaps[0]}")
     }
 
     @Test
