@@ -35,6 +35,10 @@ describe('AuthService', () => {
         expect(req.request.method).toBe('POST');
         req.flush({ token: 'mock-jwt-token', userId: '1', username: 'admin' });
 
+        const profileReq = httpTestingController.expectOne('http://localhost:8080/api/users/me');
+        expect(profileReq.request.method).toBe('GET');
+        profileReq.flush({ username: 'admin', pictureUrl: null });
+
         const success = await p;
         expect(success).toBe(true);
         expect(service.isLoggedIn()).toBe(true);
