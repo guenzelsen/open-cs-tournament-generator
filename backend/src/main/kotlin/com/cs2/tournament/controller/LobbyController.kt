@@ -28,7 +28,7 @@ class LobbyController(
         val lastBanTime: LocalDateTime?
     )
 
-    private val cs2Maps = listOf("Ancient", "Dust II", "Inferno", "Mirage", "Nuke", "Overpass", "Anubis")
+    private val cs2Maps = listOf("de_ancient", "de_dust2", "de_inferno", "de_mirage", "de_nuke", "de_overpass", "de_anubis")
 
     /**
      * Retrieves the current state of a match lobby.

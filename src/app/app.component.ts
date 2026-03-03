@@ -79,7 +79,7 @@ export class AppComponent {
     selectedMap = this.lobbyService.selectedMap;
 
     // Available Maps (Reduced to 7 for Pick/Ban where 6 are banned and 1 remains)
-    cs2Maps = ['Ancient', 'Dust II', 'Inferno', 'Mirage', 'Nuke', 'Overpass', 'Anubis'];
+    cs2Maps = ['de_ancient', 'de_dust2', 'de_inferno', 'de_mirage', 'de_nuke', 'de_overpass', 'de_anubis'];
 
     // Map Vote Timer
     banTimer = signal<number>(0);
@@ -337,7 +337,7 @@ export class AppComponent {
         const t = this.activeTournament();
         if (!t) return false;
         const username = this.currentUser();
-        return t.organizerName === username || t.adminUsernames?.includes(username || '');
+        return t.organizerName === username || (t.adminUsernames?.includes(username || '') ?? false);
     }
 
     async addAdmin(username: string) {

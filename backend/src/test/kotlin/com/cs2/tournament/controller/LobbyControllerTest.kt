@@ -53,11 +53,11 @@ class LobbyControllerTest {
         `when`(teamRepository.findById("gt1")).thenReturn(Optional.of(globalTeam1))
 
         // Execute
-        val response = controller.banMap("m1", LobbyController.BanRequest("Mirage"), principal)
+        val response = controller.banMap("m1", LobbyController.BanRequest("de_mirage"), principal)
         
         // Assert
         assertEquals(200, response.statusCode.value())
-        assertTrue(response.body!!.bannedMaps.contains("Mirage"))
+        assertTrue(response.body!!.bannedMaps.contains("de_mirage"))
     }
     
     @Test
@@ -85,7 +85,7 @@ class LobbyControllerTest {
         `when`(teamRepository.findById("gt1")).thenReturn(Optional.of(globalTeam1))
 
         // Execute
-        val response = controller.banMap("m1", LobbyController.BanRequest("Mirage"), principal)
+        val response = controller.banMap("m1", LobbyController.BanRequest("de_mirage"), principal)
         
         // Assert: Forbidden (403) because it's team 1's turn, but logged user is not team 1's owner
         assertEquals(403, response.statusCode.value())
