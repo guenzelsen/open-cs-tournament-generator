@@ -9,7 +9,7 @@ describe('TournamentService', () => {
     let httpTestingController: HttpTestingController;
 
     const mockResponse: TournamentListResponse = {
-        id: '1', name: 'Test', organizerId: 'user1', currentRound: 0, status: 'SETUP', maxRounds: 4, teams: [], matches: []
+        id: '1', name: 'Test', organizerName: 'user1', currentRound: 0, status: 'SETUP', maxRounds: 4, teams: [], matches: [], adminUsernames: []
     };
 
     beforeEach(() => {

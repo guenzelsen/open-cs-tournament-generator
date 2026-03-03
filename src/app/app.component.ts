@@ -324,6 +324,10 @@ export class AppComponent {
         }
     }
 
+    hasUnfinishedMatches(): boolean {
+        return this.activeMatches().some(m => !m.winnerId);
+    }
+
     getTeamName(id: string): string {
         return this.teams().find(t => t.id === id)?.name || 'Unknown';
     }

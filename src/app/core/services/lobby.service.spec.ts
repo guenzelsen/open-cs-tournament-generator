@@ -32,21 +32,21 @@ describe('LobbyService', () => {
 
         const req = httpTestingController.expectOne('http://localhost:8080/api/lobbies/match-1');
         expect(req.request.method).toBe('GET');
-        req.flush({ matchId: 'match-1', team1Id: 't1', team2Id: 't2', mapVotes: { 'Mirage': 1 }, selectedMap: null });
+        req.flush({ matchId: 'match-1', team1Id: 't1', team2Id: 't2', bannedMaps: ['Mirage'], selectedMap: null, lastBanTime: null });
 
         await p;
-        expect(service.activeLobby()?.mapVotes['Mirage']).toBe(1);
+        expect(service.activeLobby()?.bannedMaps).toContain('Mirage');
     });
 
-    it('should submit map vote', async () => {
-        const p = service.voteMap('match-1', 'Dust II');
+    it('should submit map ban', async () => {
+        const p = service.banMap('match-1', 'Dust II');
 
-        const req = httpTestingController.expectOne('http://localhost:8080/api/lobbies/match-1/vote');
+        const req = httpTestingController.expectOne('http://localhost:8080/api/lobbies/match-1/ban');
         expect(req.request.method).toBe('POST');
         expect(req.request.body).toEqual({ mapName: 'Dust II' });
-        req.flush({ matchId: 'match-1', team1Id: 't1', team2Id: 't2', mapVotes: { 'Dust II': 2 }, selectedMap: 'Dust II' });
+        req.flush({ matchId: 'match-1', team1Id: 't1', team2Id: 't2', bannedMaps: ['Dust II'], selectedMap: null, lastBanTime: null });
 
         await p;
-        expect(service.selectedMap()).toBe('Dust II');
+        expect(service.activeLobby()?.bannedMaps).toContain('Dust II');
     });
 });
